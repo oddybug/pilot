@@ -1,0 +1,34 @@
+# GLM
+
+add_subdirectory(${THIRD_PARTY_DIR}/cglm "${CMAKE_CURRENT_BINARY_DIR}/cglm"
+                 EXCLUDE_FROM_ALL)
+# Glad
+
+# Glad is compiled and linked manualy. Note that IOM_SRC contains the src of
+# glad.
+
+# EGL
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(EGL REQUIRED egl)
+
+# lib src
+set(RENDERER_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/render.c"
+    # "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/shader.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/camera.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/camera.c")
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/modules/generic"
+                 "${CMAKE_BINARY_DIR}/modules/generic")
+
+add_library(render ${RENDERER_SRC})
+
+target_include_directories(render PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+target_include_directories(render PRIVATE "${THIRD_PARTY_DIR}/glad/include"
+                                          "${EGL_INCLUDE_DIRS}")
+
+target_link_libraries(render PRIVATE core_types generic GL ${EGL_LIBRARIES}
+                                     cglm)

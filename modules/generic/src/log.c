@@ -1,3 +1,5 @@
+#ifndef NDEBUG
+
 #include "log.h"
 
 #include <stdarg.h>
@@ -116,3 +118,5 @@ void gen_log(const char *level, const char *file, const char *function,
 #undef RESET
 
 #undef N_LEVELS
+
+#endif /* ifdef NDEBUG */

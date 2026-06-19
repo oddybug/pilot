@@ -13,6 +13,20 @@ extern "C" {
 
 #include "types.h"
 
+#ifdef NDEBUG
+
+#define ERROR(...)
+
+#define WARN(...)
+
+#define INFO(...)
+
+#define DEBUG(...)
+
+#define TRACE(...)
+
+#else
+
 void gen_log(const char *level, const char *file, const char *function,
              u32 line, ...);
 
@@ -30,6 +44,10 @@ void gen_log(const char *level, const char *file, const char *function,
 
 #define TRACE(...)                                                             \
   gen_log("TRACE", __FILE__, __func__, __LINE__, __VA_ARGS__, NULL_TERMINATOR)
+
+#endif // !NDEBUG
+
+#undef NULL_TERMINATOR
 
 #ifdef __cplusplus
 }

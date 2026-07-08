@@ -13,9 +13,7 @@ set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
 add_library(core_types INTERFACE)
 
-target_include_directories(core_types INTERFACE 
-    "${CMAKE_SOURCE_DIR}/include"
-)
+target_include_directories(core_types INTERFACE "${CMAKE_SOURCE_DIR}/include")
 
 #
 # CEF_ROOT setup. This variable must be set to locate the binary distribution.
@@ -75,7 +73,6 @@ find_package(CEF REQUIRED)
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/pilot")
-
   add_subdirectory(pilot)
 endif()
 
@@ -96,6 +93,7 @@ endif()
 
 # Display configuration settings.
 print_cef_config()
+
 
 #
 # Define the API documentation target.

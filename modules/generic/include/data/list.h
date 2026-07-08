@@ -1,35 +1,29 @@
 #ifndef LIST_H
+#define LIST_H
 
 #ifdef __cplusplus
 extern "C" {
-
 #endif // __cplusplus
 
-#define T list_T
-#define O node_T
+struct list_T;
 
-typedef struct T *T;
-typedef struct O *O;
-
-struct O {
-  O next;
+struct node_T {
+  struct node_T *next;
   void *value;
 };
 
-extern T list_new(void);
+extern struct list_T *list_new(void);
 
-extern void list_insert(T list, O node, void *value);
+extern void list_insert(struct list_T *list, struct node_T *node, void *value);
 
-extern void list_push_front(T list, void *value);
+extern void list_push_front(struct list_T *list, void *value);
 
-extern void list_pop(T list, O node);
+extern void list_pop(struct list_T *list, struct node_T *node);
 
-extern void list_pop_front(T list, void *value);
+extern void list_pop_front(struct list_T *list, void *value);
 
-extern T list_new(void);
+extern struct list_T *list_new(void);
 
-#undef T
-#undef O
 #ifdef __cplusplus
 }
 #endif // __cplusplus

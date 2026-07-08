@@ -65,14 +65,13 @@ static void gen_write_log(u32 level, const char *file, const char *function,
     break;
   }
 
-  fprintf(stderr, "%s%s[%s]%s(%s:%s:%u) -", color, BOLD, levels[level], RESET,
+  fprintf(stderr, "%s%s[%s]%s(%s:%s:%u) - ", color, BOLD, levels[level], RESET,
           file, function, line);
 
-  const char *msg = va_arg(list, const char *);
+  const char *fmt = va_arg(list, const char *);
 
-  while (msg != NULL) {
-    fprintf(stderr, " %s", msg);
-    msg = va_arg(list, const char *);
+  if (fmt) {
+    vfprintf(stderr, fmt, list);
   }
 
   fprintf(stderr, "\n");

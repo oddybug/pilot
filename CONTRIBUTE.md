@@ -1,0 +1,14 @@
+# CONTRIBUTE
+
+## VERSION CONTROL
+
+
+
+### VERSIONING
+
+
+
+### BRANCHES 
+
+
+### 

@@ -6,17 +6,14 @@
 #include "data/list.h"
 #include "types.h"
 
-#define T list_T
-#define O node_T
-
-struct T {
-  O first;
+struct list_T {
+  struct node_T *first;
   u32 size;
 };
 
-extern T list_new() {
+extern struct list_T *list_new() {
 
-  T list = calloc(1, sizeof(struct T));
+  struct list_T *list = calloc(1, sizeof(struct list_T));
 
   if (!list) {
     fprintf(stderr, "Failed to allocate memory: %s", errno);
@@ -26,14 +23,14 @@ extern T list_new() {
   return list;
 };
 
-extern void list_insert(T list, O node, void *value) {
+extern void list_insert(struct list_T *list, struct node_T *node, void *value) {
   // assert(list == NULL); TODO: ASSERTION
   // assert(node == NULL); TODO: ASSERTION
 
-  O new = malloc(sizeof(struct O));
+  struct node_T *new = malloc(sizeof(struct node_T));
 
   if (!new) {
-    fprintf(stderr, "Failed to allocate memory: %s", errno);
+    fprintf(stderr, "Failed to allocate memory: %d", errno);
     return;
     // TODO: EXCEPTION
   }
@@ -45,28 +42,30 @@ extern void list_insert(T list, O node, void *value) {
   list->size++;
 }
 
-extern void list_push_front(T list, void *value) {
+extern void list_push_front(struct list_T *list, void *value) {
   // assert(list == NULL); TODO: ASSERTION
 
-  O new = malloc(sizeof(struct O));
+  struct node_T *new = malloc(sizeof(struct node_T));
 
   if (!new) {
-    fprintf(stderr, "Failed to allocate memory: %s", errno);
+    fprintf(stderr, "Failed to allocate memory: %d", errno);
     return;
     // TODO: EXCEPTION
   }
 
+  new->value = value;
+
   if (list->first == NULL) {
     list->first = new;
   } else {
-    new->next = list->first->next;
+    new->next = list->first;
     list->first = new;
   }
 
   list->size++;
 }
 
-extern void list_pop(T list, O node) {
+extern void list_pop(struct list_T *list, struct node_T *node) {
   // assert(list == NULL)
   // assert(node == NULL)
 
@@ -75,13 +74,13 @@ extern void list_pop(T list, O node) {
     return;
   }
 
-  O next = node->next;
+  struct node_T *next = node->next;
   *node = *next;
 
   free(next);
 };
 
-extern void list_pop_front(T list, void *value) {
+extern void list_pop_front(struct list_T *list, void *value) {
   // assert(list == NULL)
   if (list->first == NULL) {
     fprintf(stderr, "List already empty.");
@@ -92,6 +91,3 @@ extern void list_pop_front(T list, void *value) {
   free(list->first);
   list->size--;
 };
-
-#undef T
-#undef O

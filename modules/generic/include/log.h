@@ -5,7 +5,7 @@
 #define NULL_TERMINATOR nullptr
 #else
 #define NULL_TERMINATOR NULL
-#endif
+#endif // __cplusplus
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,24 +30,18 @@ extern "C" {
 void gen_log(const char *level, const char *file, const char *function,
              u32 line, ...);
 
-#define ERROR(...)                                                             \
-  gen_log("ERROR", __FILE__, __func__, __LINE__, __VA_ARGS__, NULL_TERMINATOR)
-
-#define WARN(...)                                                              \
-  gen_log("WARN", __FILE__, __func__, __LINE__, __VA_ARGS__, NULL_TERMINATOR)
-
-#define INFO(...)                                                              \
-  gen_log("INFO", __FILE__, __func__, __LINE__, __VA_ARGS__, NULL_TERMINATOR)
-
-#define DEBUG(...)                                                             \
-  gen_log("DEBUG", __FILE__, __func__, __LINE__, __VA_ARGS__, NULL_TERMINATOR)
-
-#define TRACE(...)                                                             \
-  gen_log("TRACE", __FILE__, __func__, __LINE__, __VA_ARGS__, NULL_TERMINATOR)
+#define ERROR(fmt, ...)                                                        \
+  gen_log("ERROR", __FILE__, __func__, __LINE__, fmt, ##__VA_ARGS__)
+#define WARN(fmt, ...)                                                         \
+  gen_log("WARN", __FILE__, __func__, __LINE__, fmt, ##__VA_ARGS__)
+#define INFO(fmt, ...)                                                         \
+  gen_log("INFO", __FILE__, __func__, __LINE__, fmt, ##__VA_ARGS__)
+#define DEBUG(fmt, ...)                                                        \
+  gen_log("DEBUG", __FILE__, __func__, __LINE__, fmt, ##__VA_ARGS__)
+#define TRACE(fmt, ...)                                                        \
+  gen_log("TRACE", __FILE__, __func__, __LINE__, fmt, ##__VA_ARGS__)
 
 #endif // !NDEBUG
-
-#undef NULL_TERMINATOR
 
 #ifdef __cplusplus
 }

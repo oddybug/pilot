@@ -85,9 +85,9 @@ s8 iom_create_window(const char *title, u32 width, u32 height) {
  *
  * @return returns 0 on succes
  */
-s8 iom_create_default_window(void);
+static s8 iom_create_default_window(void);
 
-s8 iom_create_default_window(void) {
+static s8 iom_create_default_window(void) {
   return iom_create_window(WINDOW_NAME, DEFAULT_SCR_WIDTH, DEFAULT_SCR_HEIGHT);
 };
 
@@ -96,9 +96,9 @@ s8 iom_create_default_window(void) {
  *
  * @return returns 0 on succes.
  */
-s8 iom_init_glad_gl();
+static s8 iom_init_glad_gl();
 
-s8 iom_init_glad_gl() {
+static s8 iom_init_glad_gl() {
 
   int version = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
 
@@ -109,16 +109,16 @@ s8 iom_init_glad_gl() {
   return 0;
 };
 
-EGLDisplay egl_display;
+static EGLDisplay egl_display;
 
 /**
  * @brief initialize OpenGL ES context
  *
  * @return returns 0 on succes.
  */
-s8 iom_init_glad_gles(void);
+static s8 iom_init_glad_gles(void);
 
-s8 iom_init_glad_gles(void) {
+static s8 iom_init_glad_gles(void) {
   egl_display = (EGLDisplay)SDL_EGL_GetCurrentDisplay();
 
   if (egl_display == NULL) {
@@ -132,7 +132,7 @@ s8 iom_init_glad_gles(void) {
   return 0;
 };
 
-s8 iom_quit() {
+extern s8 iom_quit() {
   SDL_GL_DestroyContext(gl_context);
   SDL_DestroyWindow(window);
   SDL_Quit();
@@ -140,7 +140,7 @@ s8 iom_quit() {
   return 0;
 }
 
-s8 iom_init() {
+extern s8 iom_init() {
 
   bool done = false;
 
@@ -171,21 +171,34 @@ s8 iom_init() {
             err);
   }
 
-  while (!done) {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_EVENT_QUIT) {
-        done = true;
-      }
-    }
+  //// TODO: user need to have control over the main loop
+  // while (!done) {
+  //   SDL_Event event;
+  //   while (SDL_PollEvent(&event)) {
+  //     if (event.type == SDL_EVENT_QUIT) {
+  //       done = true;
+  //     }
+  //   }
 
-    // Render loop
-    glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+  //  // Render loop
+  //}
 
-    SDL_GL_SwapWindow(window);
-  }
-
-  iom_quit();
+  // iom_quit();
   return 0;
 }
+
+static void (*_iom_event_callback)(SDL_Event *e);
+
+extern void iom_set_event_callback(void (*callback)(SDL_Event *e)) {
+  _iom_event_callback = callback;
+};
+
+extern void iom_poll_events() {
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    _iom_event_callback(&event);
+  }
+
+
+  SDL_GL_SwapWindow(window);
+};

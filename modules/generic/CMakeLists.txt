@@ -1,6 +1,8 @@
 # lib src
-set(GENERIC_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/data/list.c"
-                "${CMAKE_CURRENT_SOURCE_DIR}/src/log.c")
+set(GENERIC_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/data/list.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/data/serial.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/log.c")
 
 add_library(generic SHARED ${GENERIC_SRC})
 

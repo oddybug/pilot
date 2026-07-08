@@ -1,7 +1,8 @@
 # GLM
 
-add_subdirectory(${THIRD_PARTY_DIR}/cglm "${CMAKE_CURRENT_BINARY_DIR}/cglm"
+add_subdirectory(${THIRD_PARTY_DIR}/cglm "${CMAKE_BINARY_DIR}/cglm"
                  EXCLUDE_FROM_ALL)
+
 # Glad
 
 # Glad is compiled and linked manualy. Note that IOM_SRC contains the src of
@@ -17,8 +18,9 @@ set(RENDERER_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/render.c"
     # "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/shader.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/entity.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/camera.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/camera.c")
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/object.c")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/generic"
                  "${CMAKE_BINARY_DIR}/modules/generic")

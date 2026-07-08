@@ -246,6 +246,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/modules/iom"
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/render"
                  "${CMAKE_CURRENT_BINARY_DIR}/modules/render")
+
 # DEMO
 file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
      "${THIRD_PARTY_DIR}/Debug.hpp")
@@ -254,6 +255,9 @@ target_sources(${CEF_TARGET} PRIVATE "${APP_SOURCES}")
 
 target_include_directories(${CEF_TARGET} PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
-target_link_libraries(${CEF_TARGET} PRIVATE iom render generic)
+target_link_libraries(${CEF_TARGET} PRIVATE iom render generic cglm SDL3::SDL3)
+
+include(cmake/directories.cmake)
+include(cmake/resources.cmake)
 
 # set_executable_target_properties(sdl_test)

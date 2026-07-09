@@ -1,6 +1,6 @@
 third_party/
-build/
 compile_commands.json
 
+build/
 release/
 debug/

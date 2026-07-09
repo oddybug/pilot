@@ -27,7 +27,8 @@ public:
   // CefBrowserProcessHandler methods:
   void OnContextInitialized() override;
 
-  // v8 initialitzation call. Called when the JavaScript context is created in the renderer process
+  // v8 initialitzation call. Called when the JavaScript context is created in
+  // the renderer process
   void OnContextCreated(CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefFrame> frame,
                         CefRefPtr<CefV8Context> context) override;

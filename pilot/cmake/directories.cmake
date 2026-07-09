@@ -3,5 +3,5 @@
 message("Printing shader directory for module renderer:")
 message("${CMAKE_CURRENT_BINARY_DIR}/resources/shaders/")
 target_compile_definitions(
-  cef
+  pilot
   PRIVATE SHADERS_SOURCE_DIR="${CMAKE_CURRENT_BINARY_DIR}/resources/shaders/")

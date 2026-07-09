@@ -221,6 +221,11 @@ void SimpleApp::OnContextInitialized() {
     // fully styled Chrome UI window.
     window_info.runtime_style = runtime_style;
 
+    // Tell window we want OSR mode
+    // TODO: Some features that requires parent window as specified in the api
+    // of this call will not work.
+    window_info.SetAsWindowless(0);
+
     // Create the first browser window.
     CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
                                   nullptr, nullptr);

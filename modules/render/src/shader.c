@@ -2,6 +2,7 @@
 #include <glad/gl.h>
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "data/serial.h"
 #include "log.h"

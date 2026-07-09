@@ -14,6 +14,7 @@
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
+#include "log.h"
 
 namespace {
 
@@ -191,3 +192,99 @@ void SimpleHandler::PlatformShowWindow(CefRefPtr<CefBrowser> browser) {
   NOTIMPLEMENTED();
 }
 #endif
+
+// CefRenderHandler IMPLEMENTATIONS
+
+// TODO: to implement
+CefRefPtr<CefAccessibilityHandler> SimpleHandler::GetAccessibilityHandler() {
+  return nullptr;
+}
+
+// TODO: to implement
+bool SimpleHandler::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
+                                      CefRect &rect) {
+  return false;
+}
+
+// TODO: to implement
+void SimpleHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
+  // TODO: SET AS DESIRED HARDCODED !URGENT
+  rect.Set(0, 0, 1280, 720);
+}
+
+// TODO: to implement
+bool SimpleHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX,
+                                   int viewY, int &screenX, int &screenY) {
+  return false;
+}
+
+// TODO: to implement
+bool SimpleHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,
+                                  CefScreenInfo &screen_info) {
+  return false;
+}
+
+// TODO: to implement
+void SimpleHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {}
+
+// TODO: to implement
+void SimpleHandler::OnPopupSize(CefRefPtr<CefBrowser> browser,
+                                const CefRect &rect) {}
+
+// TODO: to implement
+void SimpleHandler::OnPaint(CefRefPtr<CefBrowser> browser,
+                            PaintElementType type, const RectList &dirtyRects,
+                            const void *buffer, int width, int height) {
+  // This is where your pixel-buffer rendering logic will eventually go.
+  // Literal pixels ontoscreen
+
+  INFO("COPY PIXELS ENABLED");
+}
+
+// TODO: to implement
+void SimpleHandler::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
+                                       PaintElementType type,
+                                       const RectList &dirtyRects,
+                                       const CefAcceleratedPaintInfo &info) {
+  // Shared texture
+  INFO("SHARED TEXTURE ENABLED");
+}
+
+// TODO: to implement
+void SimpleHandler::GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
+                                       cef_horizontal_alignment_t orientation,
+                                       CefSize &size) {}
+
+// TODO: to implement
+void SimpleHandler::OnTouchHandleStateChanged(
+    CefRefPtr<CefBrowser> browser, const CefTouchHandleState &state) {}
+
+// TODO: to implement
+bool SimpleHandler::StartDragging(CefRefPtr<CefBrowser> browser,
+                                  CefRefPtr<CefDragData> drag_data,
+                                  DragOperationsMask allowed_ops, int x,
+                                  int y) {
+  return false;
+}
+
+// TODO: to implement
+void SimpleHandler::UpdateDragCursor(CefRefPtr<CefBrowser> browser,
+                                     DragOperation operation) {}
+
+// TODO: to implement
+void SimpleHandler::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
+                                          double x, double y) {}
+
+// TODO: to implement
+void SimpleHandler::OnImeCompositionRangeChanged(
+    CefRefPtr<CefBrowser> browser, const CefRange &selected_range,
+    const RectList &character_bounds) {}
+
+// TODO: to implement
+void SimpleHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
+                                           const CefString &selected_text,
+                                           const CefRange &selected_range) {}
+
+// TODO: to implement
+void SimpleHandler::OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
+                                               TextInputMode input_mode) {}

@@ -21,4 +21,4 @@ endforeach()
 
 add_custom_target(copy_app_resources ALL DEPENDS ${OUTPUT_FILES})
 
-add_dependencies(cef copy_app_resources)
+add_dependencies(pilot copy_app_resources)

@@ -28,4 +28,4 @@ target_include_directories(iom PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(iom PRIVATE "${THIRD_PARTY_DIR}/glad/include"
                                        "${EGL_INCLUDE_DIRS}")
 
-target_link_libraries(iom PRIVATE core_types SDL3::SDL3 GL ${EGL_LIBRARIES})
+target_link_libraries(iom PRIVATE generic SDL3::SDL3 GL ${EGL_LIBRARIES})

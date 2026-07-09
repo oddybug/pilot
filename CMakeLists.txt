@@ -11,10 +11,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
-add_library(core_types INTERFACE)
-
-target_include_directories(core_types INTERFACE "${CMAKE_SOURCE_DIR}/include")
-
 #
 # CEF_ROOT setup. This variable must be set to locate the binary distribution.
 # TODO: Choose one of the below examples and comment out the rest.
@@ -94,7 +90,6 @@ endif()
 # Display configuration settings.
 print_cef_config()
 
-
 #
 # Define the API documentation target.
 #
@@ -119,3 +114,5 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile")
     message(WARNING "Doxygen must be installed to generate API documentation.")
   endif()
 endif()
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/modules/generic")

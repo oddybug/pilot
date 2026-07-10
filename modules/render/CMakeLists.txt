@@ -1,8 +1,5 @@
 # GLM
 
-add_subdirectory(${THIRD_PARTY_DIR}/cglm "${CMAKE_BINARY_DIR}/cglm"
-                 EXCLUDE_FROM_ALL)
-
 # Glad
 
 # Glad is compiled and linked manualy. Note that IOM_SRC contains the src of

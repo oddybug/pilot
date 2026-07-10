@@ -42,9 +42,9 @@ void start_camera() {
 
 int main(int argc, char *argv[]) {
 
+  ui_start(argc, argv);
   iom_init();
   ren_init();
-  ui_start(argc, argv);
 
   iom_set_event_callback(sdl_callback);
   start_camera();
@@ -69,11 +69,11 @@ int main(int argc, char *argv[]) {
 
   iom_quit();
 
-  ////ren_create_program(const s8 *vertex_src, const s8 *fragment_src)
+  // ren_create_program(const s8 *vertex_src, const s8 *fragment_src)
 
-  //// ren_draw_frame();
-  // s32 r = ren_primitive_create_cube();
-  // INFO(r);
+  // ren_draw_frame();
+  s32 r = ren_primitive_create_cube();
+  INFO(r);
 
   return 0;
 };

@@ -115,4 +115,13 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile")
   endif()
 endif()
 
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/cglm")
+
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/generic")
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/modules/iom")
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/modules/render")
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/modules/ui")
+

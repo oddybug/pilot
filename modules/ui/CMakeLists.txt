@@ -67,24 +67,7 @@ else()
   add_logical_target("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 endif()
 
-# Determine the target output directory.
-set_cef_target_out_dir()
-
-set(CEF_TARGET_OUT_DIR
-    "${CEF_TARGET_OUT_DIR}"
-    PARENT_SCOPE)
-set(CEF_BINARY_DIR
-    "${CEF_BINARY_DIR}"
-    PARENT_SCOPE)
-set(CEF_BINARY_FILES
-    "${CEF_BINARY_FILES}"
-    PARENT_SCOPE)
-set(CEF_RESOURCE_DIR
-    "${CEF_RESOURCE_DIR}"
-    PARENT_SCOPE)
-set(CEF_RESOURCE_FILES
-    "${CEF_RESOURCE_FILES}"
-    PARENT_SCOPE)
+# Determine the target output directory. set_cef_target_out_dir()
 
 #
 # Linux configuration.
@@ -98,33 +81,33 @@ if(OS_LINUX)
                                               ${CEF_STANDARD_LIBS} generic)
 
   # Set rpath so that libraries can be placed next to the executable.
-  set_target_properties(${CEF_TARGET} PROPERTIES INSTALL_RPATH "$ORIGIN")
-  set_target_properties(${CEF_TARGET} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-  set_target_properties(${CEF_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                                                 ${CEF_TARGET_OUT_DIR})
+  # set_target_properties(${CEF_TARGET} PROPERTIES INSTALL_RPATH "$ORIGIN")
+  # set_target_properties(${CEF_TARGET} PROPERTIES BUILD_WITH_INSTALL_RPATH
+  # TRUE) set_target_properties(${CEF_TARGET} PROPERTIES
+  # RUNTIME_OUTPUT_DIRECTORY ${CEF_TARGET_OUT_DIR})
 
-  copy_files("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}"
-             "${CEF_TARGET_OUT_DIR}")
-  copy_files("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}"
-             "${CEF_TARGET_OUT_DIR}")
-  if(EXISTS "${CEF_BINARY_DIR}/libminigbm.so")
-    copy_files("${CEF_TARGET}" "libminigbm.so" "${CEF_BINARY_DIR}"
-               "${CEF_TARGET_OUT_DIR}")
-  endif()
+  # copy_files("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}"
+  # "${CEF_TARGET_OUT_DIR}")
+  # copy_files("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}"
+  # "${CEF_TARGET_OUT_DIR}")
+  # if(EXISTS "${CEF_BINARY_DIR}/libminigbm.so") copy_files("${CEF_TARGET}"
+  # "libminigbm.so" "${CEF_BINARY_DIR}"
+  # "${CEF_TARGET_OUT_DIR}")
+  # endif()
 
   target_include_directories(${CEF_TARGET} PRIVATE "${CEF_ROOT}")
 
   target_include_directories(${CEF_TARGET}
                              PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-  # TODO: TEMPORAL FOR TESTING
-  add_executable(test "${CMAKE_CURRENT_SOURCE_DIR}/src/test.cpp")
-  target_link_libraries(test PRIVATE ${CEF_TARGET})
-  target_include_directories(test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                                          ${CEF_ROOT})
-  set_target_properties(test PROPERTIES INSTALL_RPATH "$ORIGIN")
-  set_target_properties(test PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-  set_target_properties(test PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                                        ${CEF_TARGET_OUT_DIR})
+
+  # TODO: TEMPORAL FOR TESTING add_executable(test
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/test.cpp") target_link_libraries(test
+  # PRIVATE ${CEF_TARGET}) target_include_directories(test PRIVATE
+  # "${CMAKE_CURRENT_SOURCE_DIR}/include" ${CEF_ROOT})
+  # set_target_properties(test PROPERTIES INSTALL_RPATH "$ORIGIN")
+  # set_target_properties(test PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+  # set_target_properties(test PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+  # ${CEF_TARGET_OUT_DIR})
 
   # Set SUID permissions on the chrome-sandbox target.
   # set_linux_suid_permissions("${CEF_TARGET}"
@@ -152,8 +135,8 @@ if(OS_LINUX)
   # endif()
 
   # Set SUID permissions on the chrome-sandbox target.
-  set_linux_suid_permissions("${CEF_TARGET}"
-                             "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
+  #set_linux_suid_permissions("${CEF_TARGET}"
+  #                           "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
 endif()
 
 #

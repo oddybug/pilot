@@ -6,15 +6,6 @@
 
 # EGL find_package(PkgConfig REQUIRED) pkg_check_modules(EGL REQUIRED egl)
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/modules/iom"
-                 "${CMAKE_CURRENT_BINARY_DIR}/modules/iom")
-
-add_subdirectory("${CMAKE_SOURCE_DIR}/modules/render"
-                 "${CMAKE_CURRENT_BINARY_DIR}/modules/render")
-
-add_subdirectory("${CMAKE_SOURCE_DIR}/modules/ui"
-                 "${CMAKE_CURRENT_BINARY_DIR}/modules/ui")
-
 # DEMO
 file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
      "${THIRD_PARTY_DIR}/Debug.hpp")
@@ -29,12 +20,20 @@ target_link_libraries(pilot PRIVATE iom render generic cglm SDL3::SDL3 ui)
 
 # CEF
 
-if(OS_LINUX)
-  set_target_properties(pilot PROPERTIES INSTALL_RPATH "\\$ORIGIN")
-  set_target_properties(pilot PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+set_cef_target_out_dir()
 
-  set_target_properties(pilot PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                                         "${CEF_TARGET_OUT_DIR}")
+if(OS_LINUX)
+  set_target_properties(pilot PROPERTIES SKIP_BUILD_RPATH FALSE
+                                         BUILD_WITH_INSTALL_RPATH FALSE)
+
+  set(PILOT_BUILD_PATHS "$<TARGET_FILE_DIR:cglm>" "$<TARGET_FILE_DIR:generic>"
+                        "$<TARGET_FILE_DIR:SDL3::SDL3>" "${CEF_TARGET_OUT_DIR}")
+
+  # 1. Pass the list directly to the property
+  set_target_properties(pilot PROPERTIES BUILD_RPATH "${PILOT_BUILD_PATHS}")
+
+  set_target_properties(pilot PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+  set(CMAKE_RELATIVE_RPATH ON)
 
   copy_files("pilot" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}"
              "${CEF_TARGET_OUT_DIR}")
@@ -45,9 +44,9 @@ if(OS_LINUX)
     copy_files("pilot" "libminigbm.so" "${CEF_BINARY_DIR}"
                "${CEF_TARGET_OUT_DIR}")
   endif()
+
+  set_linux_suid_permissions(pilot "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
 endif()
 
 include(cmake/directories.cmake)
 include(cmake/resources.cmake)
-
-# set_executable_target_properties(sdl_test)

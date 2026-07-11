@@ -1,10 +1,10 @@
 #include "SDL3/SDL_events.h"
-
 #include "ui.h"
 
 extern "C" {
 #include "camera.h"
 #include "entity.h"
+#include "global.h" // Assuming 'state' is declared here as an extern int
 #include "io_manager.h"
 #include "log.h"
 #include "object.h"
@@ -12,17 +12,18 @@ extern "C" {
 #include "shader.h"
 }
 
-static s32 enable;
+extern int g_app_state;
+const int UI_STATE_READY_TO_EXIT = 2;
 
 void sdl_callback(SDL_Event *e) {
   switch (e->type) {
   case SDL_EVENT_QUIT:
-    enable = 1;
+    state = 0;
     break;
   case SDL_EVENT_KEY_DOWN:
     switch (e->key.key) {
     case SDLK_ESCAPE:
-      enable = 1;
+      state = 0;
       break;
     }
     break;
@@ -42,15 +43,15 @@ void start_camera() {
 
 int main(int argc, char *argv[]) {
 
-  ui_start(argc, argv);
+  if (ui_start(argc, argv) != 0) {
+    return -1;
+  }
+
   iom_init();
   ren_init();
 
   iom_set_event_callback(sdl_callback);
   start_camera();
-
-  // TODO: ERROR HANDLING
-  // ren_init();
 
   s32 p_id = ren_create_program_from_files(SHADERS_SOURCE_DIR "vertex.glsl",
                                            SHADERS_SOURCE_DIR "fragment.glsl");
@@ -59,21 +60,17 @@ int main(int argc, char *argv[]) {
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
   ren_entity_add_component(e1, COMPONENT_PROGRAM, p_id);
 
-  while (!enable) {
+  while (state) {
     iom_poll_events();
     ren_draw_frame();
+
+    ui_message_loop();
   }
 
-  INFO("shader src dir: %s", SHADERS_SOURCE_DIR "vertex.glsl");
-  INFO("SHADER created with id: %d", p_id);
+  INFO("QUITTING");
 
   iom_quit();
-
-  // ren_create_program(const s8 *vertex_src, const s8 *fragment_src)
-
-  // ren_draw_frame();
-  s32 r = ren_primitive_create_cube();
-  INFO(r);
+  ui_close();
 
   return 0;
 };

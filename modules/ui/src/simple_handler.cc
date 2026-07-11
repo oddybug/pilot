@@ -103,6 +103,11 @@ bool SimpleHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   return false;
 }
 
+
+enum AppState { STATE_RUNNING, STATE_CLOSING_BROWSERS, STATE_READY_TO_EXIT };
+
+extern AppState g_app_state;
+
 void SimpleHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -117,7 +122,7 @@ void SimpleHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 
   if (browser_list_.empty()) {
     // All browser windows have closed. Quit the application message loop.
-    CefQuitMessageLoop();
+    g_app_state = STATE_READY_TO_EXIT;
   }
 }
 

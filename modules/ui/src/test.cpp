@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
 
   // Specify CEF global settings here.
   CefSettings settings;
+  settings.windowless_rendering_enabled = true;
 
   // When generating projects with CMake the CEF_USE_SANDBOX value will be /
   // defined / automatically.Pass - DUSE_SANDBOX = OFF to the CMake command -

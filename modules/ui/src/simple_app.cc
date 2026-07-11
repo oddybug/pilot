@@ -148,6 +148,8 @@ private:
 
 SimpleApp::SimpleApp() = default;
 
+extern void ui_register_handler(CefRefPtr<SimpleHandler> handler);
+
 void SimpleApp::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
 
@@ -155,14 +157,12 @@ void SimpleApp::OnContextInitialized() {
       CefCommandLine::GetGlobalCommandLine();
 
   // Check if Alloy style will be used.
-  cef_runtime_style_t runtime_style = CEF_RUNTIME_STYLE_DEFAULT;
-  bool use_alloy_style = command_line->HasSwitch("use-alloy-style");
-  if (use_alloy_style) {
-    runtime_style = CEF_RUNTIME_STYLE_ALLOY;
-  }
+  cef_runtime_style_t runtime_style = CEF_RUNTIME_STYLE_ALLOY;
 
   // SimpleHandler implements browser-level callbacks.
-  CefRefPtr<SimpleHandler> handler(new SimpleHandler(use_alloy_style));
+  CefRefPtr<SimpleHandler> handler(new SimpleHandler(CEF_RUNTIME_STYLE_ALLOY));
+
+  ui_register_handler(handler);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -174,62 +174,31 @@ void SimpleApp::OnContextInitialized() {
   url = command_line->GetSwitchValue("url");
   if (url.empty()) {
     url = "file:///home/oddy/repos/pilot/ui/index.html"; // TODO: THIS DIR IS
-                                                         // HARDCODED
+                                                         // HARDCODED !URGENT
   }
 
-  // Views is enabled by default (add `--use-native` to disable).
-  const bool use_views = !command_line->HasSwitch("use-native");
-
-  // If using Views create the browser using the Views framework, otherwise
-  // create the browser using the native platform framework.
-  if (use_views) {
-    // Create the BrowserView.
-    CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
-        handler, url, browser_settings, nullptr, nullptr,
-        new SimpleBrowserViewDelegate(runtime_style));
-
-    // Optionally configure the initial show state.
-    cef_show_state_t initial_show_state = CEF_SHOW_STATE_NORMAL;
-    const std::string &show_state_value =
-        command_line->GetSwitchValue("initial-show-state");
-    if (show_state_value == "minimized") {
-      initial_show_state = CEF_SHOW_STATE_MINIMIZED;
-    } else if (show_state_value == "maximized") {
-      initial_show_state = CEF_SHOW_STATE_MAXIMIZED;
-    }
-#if defined(OS_MAC)
-    // Hidden show state is only supported on MacOS.
-    else if (show_state_value == "hidden") {
-      initial_show_state = CEF_SHOW_STATE_HIDDEN;
-    }
-#endif
-
-    // Create the Window. It will show itself after creation.
-    CefWindow::CreateTopLevelWindow(new SimpleWindowDelegate(
-        browser_view, runtime_style, initial_show_state));
-  } else {
-    // Information used when creating the native window.
-    CefWindowInfo window_info;
+  // Information used when creating the native window.
+  CefWindowInfo window_info;
 
 #if defined(OS_WIN)
-    // On Windows we need to specify certain flags that will be passed to
-    // CreateWindowEx().
-    window_info.SetAsPopup(nullptr, "cefsimple");
+  // On Windows we need to specify certain flags that will be passed to
+  // CreateWindowEx().
+  window_info.SetAsPopup(nullptr, "cefsimple");
 #endif
 
-    // Alloy style will create a basic native window. Chrome style will create a
-    // fully styled Chrome UI window.
-    window_info.runtime_style = runtime_style;
+  // Alloy style will create a basic native window. Chrome style will create a
+  // fully styled Chrome UI window.
+  window_info.runtime_style = runtime_style;
 
-    // Tell window we want OSR mode
-    // TODO: Some features that requires parent window as specified in the api
-    // of this call will not work.
-    window_info.SetAsWindowless(0);
+  // Tell window we want OSR mode
+  // TODO: Some features that requires parent window as specified in the api
+  // of this call will not work.
+  window_info.SetAsWindowless(0);
 
-    // Create the first browser window.
-    CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
-                                  nullptr, nullptr);
-  }
+  // Create the first browser window.
+  CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
+                                nullptr, nullptr);
+  // CefBrowserHost::CloseBrowser();
 }
 
 // Called when the JavaScript context is created in the renderer process

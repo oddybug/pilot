@@ -7,14 +7,14 @@
 # EGL find_package(PkgConfig REQUIRED) pkg_check_modules(EGL REQUIRED egl)
 
 # DEMO
-file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
-     "${THIRD_PARTY_DIR}/Debug.hpp")
+file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/global.c")
 
-add_executable(pilot main.cpp)
+add_executable(pilot "${APP_SOURCES}")
 
-target_sources(pilot PRIVATE "${APP_SOURCES}")
+# target_sources(pilot PRIVATE "${APP_SOURCES}")
 
-target_include_directories(pilot PRIVATE "${CMAKE_SOURCE_DIR}/include")
+target_include_directories(pilot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 target_link_libraries(pilot PRIVATE iom render generic cglm SDL3::SDL3 ui)
 

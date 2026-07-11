@@ -4,8 +4,19 @@
 
 #include "ui.h"
 
+#include "include/cef_app.h"
 #include "include/cef_command_line.h"
+#include "include/internal/cef_ptr.h"
 #include "simple_app.h"
+#include "simple_handler.h"
+#include <cstdlib>
+
+enum AppState { STATE_RUNNING, STATE_CLOSING_BROWSERS, STATE_READY_TO_EXIT };
+
+AppState g_app_state = STATE_RUNNING;
+
+static CefRefPtr<SimpleApp> app;
+static CefRefPtr<SimpleHandler> g_handler = nullptr;
 
 s32 ui_start(int argc, char *argv[]) {
 
@@ -14,14 +25,14 @@ s32 ui_start(int argc, char *argv[]) {
 
   // SimpleApp implements application-level callbacks. It will create the first
   // browser instance in OnContextInitialized() after CEF has initialized.
-  CefRefPtr<SimpleApp> app(new SimpleApp);
+  app = CefRefPtr<SimpleApp>(new SimpleApp);
   // CEF applications have multiple sub-processes (render, GPU, etc) that share
   // the same executable. This function checks the command-line and, if this is
   // a sub-process, executes the appropriate logic.
   int exit_code = CefExecuteProcess(main_args, app, nullptr);
   if (exit_code >= 0) {
     // The sub-process has completed so return here.
-    return exit_code;
+    exit(exit_code);
   }
 
   // Parse command-line arguments for use in this method.
@@ -30,7 +41,7 @@ s32 ui_start(int argc, char *argv[]) {
 
   // Specify CEF global settings here.
   CefSettings settings;
-
+  settings.windowless_rendering_enabled = true;
   // When generating projects with CMake the CEF_USE_SANDBOX value will be
   // defined / automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line
   // to disable / use of the sandbox.
@@ -42,15 +53,32 @@ s32 ui_start(int argc, char *argv[]) {
   // fails or if early exit is desired (for example, due to process singleton
   // relaunch behavior).
   if (!CefInitialize(main_args, settings, app.get(), nullptr)) {
-    return CefGetExitCode();
+    return -1; // CefGetExitCode();
   }
 
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   // called.
-  CefRunMessageLoop();
+  // CefRunMessageLoop();
 
-  // Shut down CEF.
-  CefShutdown();
+  // CefDoMessageLoopWork();
 
   return 0;
 };
+
+// TODO: check if cef is started
+void ui_message_loop() { CefDoMessageLoopWork(); };
+
+void ui_register_handler(CefRefPtr<SimpleHandler> handler) {
+  g_handler = handler;
+}
+
+void ui_close() {
+  if (g_app_state != STATE_RUNNING)
+    return;
+  if (g_handler.get()) {
+    g_app_state = STATE_CLOSING_BROWSERS;
+    g_handler.get()->CloseAllBrowsers(1);
+  } else {
+    g_app_state = STATE_READY_TO_EXIT;
+  }
+}

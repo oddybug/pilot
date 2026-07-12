@@ -43,9 +43,9 @@ void start_camera() {
 
 int main(int argc, char *argv[]) {
 
-  if (ui_start(argc, argv) != 0) {
-    return -1;
-  }
+  //  if (ui_start(argc, argv) != 0) {
+  //    return -1;
+  //  }
 
   iom_init();
   ren_init();
@@ -64,13 +64,13 @@ int main(int argc, char *argv[]) {
     iom_poll_events();
     ren_draw_frame();
 
-    ui_message_loop();
+    //  ui_message_loop();
   }
 
   INFO("QUITTING");
 
   iom_quit();
-  ui_close();
+  // ui_close();
 
   return 0;
 };

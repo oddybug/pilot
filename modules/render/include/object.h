@@ -23,8 +23,6 @@ struct object_T {
 #define MAX_OBJECTS 1024
 extern struct object_T objects[MAX_OBJECTS];
 
-s32 init_objects_array();
-
 s32 ren_primitive_create_cube();
 
 s32 ren_delete_object(s32 id);

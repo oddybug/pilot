@@ -9,7 +9,7 @@ extern "C" {
 #include <types.h>
 
 struct object_T {
-  u32 VBO[2];
+  u32 VBO[3];
   u32 VAO;
 
   u32 id;
@@ -24,6 +24,8 @@ struct object_T {
 extern struct object_T objects[MAX_OBJECTS];
 
 s32 ren_primitive_create_cube();
+
+s32 ren_primitive_create_plane();
 
 s32 ren_delete_object(s32 id);
 

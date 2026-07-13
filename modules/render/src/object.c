@@ -33,7 +33,7 @@ f32 cube_v[] = {
     -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
     -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f};
 
-f32 cube_n[] = { // Back
+static f32 cube_n[] = { // Back
     0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f,
     0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f,
     // Front
@@ -51,6 +51,26 @@ f32 cube_n[] = { // Back
     // Top
     0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
     0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+
+// tm stands for texture mappung
+static f32 cube_tm[] = {
+    0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f};
+
+static f32 plane_v[] = {-0.5f, 0.0f, -0.5f, 0.5f,  0.0f, -0.5f,
+                        0.5f,  0.0f, 0.5f,  0.5f,  0.0f, 0.5f,
+                        -0.5f, 0.0f, 0.5f,  -0.5f, 0.0f, -0.5f};
+
+static f32 plane_n[] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                        0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+
+// tm stands for texture mapping
+static f32 plane_tm[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+                         1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f};
 
 struct object_T objects[MAX_OBJECTS];
 
@@ -75,7 +95,7 @@ s32 ren_primitive_create_cube() {
   glGenVertexArrays(1, &objects[id].VAO);
   glBindVertexArray(objects[id].VAO);
 
-  glGenBuffers(2, objects[id].VBO);
+  glGenBuffers(3, objects[id].VBO);
 
   glBindBuffer(GL_ARRAY_BUFFER, objects[id].VBO[0]);
   glBufferData(GL_ARRAY_BUFFER, sizeof(cube_v), cube_v, GL_STATIC_DRAW);
@@ -87,7 +107,10 @@ s32 ren_primitive_create_cube() {
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void *)0);
   glEnableVertexAttribArray(1);
 
-  // glDeleteBuffers(2, VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, objects[id].VBO[2]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_tm), cube_tm, GL_STATIC_DRAW);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(f32), (void *)0);
+  glEnableVertexAttribArray(2);
 
   glBindVertexArray(0);
   return id;
@@ -103,4 +126,5 @@ void ren_get_model_mat(s32 id, mat4 model) {
   glm_rotate(model, objects[id].rotation[1], (vec3){0.0, 1.0, 0.0});
   glm_rotate(model, objects[id].rotation[2], (vec3){0.0, 0.0, 1.0});
 }
+
 // model[0] = objects[i]; };

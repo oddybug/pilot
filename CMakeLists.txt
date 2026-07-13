@@ -117,7 +117,7 @@ endif()
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/cglm")
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/assimp")
+#add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/assimp")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/generic")
 

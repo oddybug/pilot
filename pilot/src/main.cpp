@@ -1,4 +1,5 @@
 #include "SDL3/SDL_events.h"
+#include "material.h"
 #include "ui.h"
 
 extern "C" {
@@ -10,10 +11,29 @@ extern "C" {
 #include "object.h"
 #include "render.h"
 #include "shader.h"
+#include "texture.h"
 }
 
 extern int g_app_state;
 const int UI_STATE_READY_TO_EXIT = 2;
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+s32 create_texture(const char *file) {
+  int width, height, nr_channels;
+  u8 *data = stbi_load(file, &width, &height, &nr_channels, 0);
+  if (data) {
+
+    s32 id = ren_create_texture(data, width, height, nr_channels, RGB);
+    stbi_image_free(data);
+    return id;
+  } else {
+    WARN("Error loading image: %s \n", file);
+    stbi_image_free(data);
+    return 0;
+  }
+}
 
 void sdl_callback(SDL_Event *e) {
   switch (e->type) {
@@ -53,10 +73,16 @@ int main(int argc, char *argv[]) {
   iom_set_event_callback(sdl_callback);
   start_camera();
 
-  s32 p_id = ren_create_program_from_files(SHADERS_SOURCE_DIR "vertex.glsl",
-                                           SHADERS_SOURCE_DIR "fragment.glsl");
+  s32 texture_id = create_texture(TEXTURES_SOURCE_DIR "gato-joel.png");
+
+  s32 p_id =
+      ren_create_program_from_files(SHADERS_SOURCE_DIR "vertex_texture.glsl",
+                                    SHADERS_SOURCE_DIR "fragment_texture.glsl");
   s32 e1 = ren_create_entity();
   s32 cube = ren_primitive_create_cube();
+  s32 m_id = ren_create_material();
+  ren_material_set_texture(m_id, texture_id);
+  ren_entity_add_component(e1, COMPONENT_MATERIAL, m_id);
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
   ren_entity_add_component(e1, COMPONENT_PROGRAM, p_id);
 

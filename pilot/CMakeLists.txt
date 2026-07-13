@@ -8,7 +8,8 @@
 
 # DEMO
 file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/global.c")
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/global.c"
+     "${CMAKE_CURRENT_SOURCE_DIR}/include/stb_image.h")
 
 add_executable(pilot "${APP_SOURCES}")
 

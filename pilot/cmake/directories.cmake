@@ -5,3 +5,8 @@ message("${CMAKE_CURRENT_BINARY_DIR}/resources/shaders/")
 target_compile_definitions(
   pilot
   PRIVATE SHADERS_SOURCE_DIR="${CMAKE_CURRENT_BINARY_DIR}/resources/shaders/")
+
+target_compile_definitions(
+  pilot
+  PRIVATE TEXTURES_SOURCE_DIR="${CMAKE_CURRENT_BINARY_DIR}/resources/textures/")
+

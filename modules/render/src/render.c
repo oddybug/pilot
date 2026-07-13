@@ -1,4 +1,3 @@
-#include <GLES2/gl2.h>
 #include <glad/gl.h>
 
 #include <render.h>
@@ -6,8 +5,10 @@
 #include "camera.h"
 #include "entity.h"
 #include "log.h"
+#include "material.h"
 #include "object.h"
 #include "shader.h"
+#include "texture.h"
 
 struct active_buffers_T {
   u8 color;
@@ -71,8 +72,15 @@ s8 ren_draw_frame() {
       continue;
     }
 
+    s32 m_id = e.components[COMPONENT_MATERIAL];
+    if (materials[m_id].texture == 0) {
+      INFO("Material has not been set for entity %d", e.id);
+      continue;
+    }
+
     s32 p_id = e.components[COMPONENT_PROGRAM];
     s32 p_gl_id = programs[p_id].id;
+
     glUseProgram(p_gl_id);
 
     ren_program_set_mat4(p_gl_id, "projection", projection);
@@ -85,6 +93,8 @@ s8 ren_draw_frame() {
     ren_program_set_mat4(p_gl_id, "model", model);
 
     struct object_T o = objects[o_id];
+    s32 t_id = materials[m_id].texture;
+    glBindTexture(GL_TEXTURE_2D, textures[t_id].gl_id);
     glBindVertexArray(o.VAO);
     glDrawArrays(GL_TRIANGLES, 0, o.n_triangles * 3);
   }

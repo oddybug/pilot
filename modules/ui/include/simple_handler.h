@@ -43,6 +43,8 @@ public:
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
+  void CloseAllBrowsers();
+
   // CefLoadHandler methods:
   void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                    ErrorCode errorCode, const CefString &errorText,
@@ -50,12 +52,12 @@ public:
 
   void ShowMainWindow();
 
-  // Request that all existing browser windows close.
-  void CloseAllBrowsers(bool force_close);
-
-  bool IsClosing() const { return is_closing_; }
+  bool AreAllBrowsersClosed();
 
 private:
+
+  bool is_closed_ = false;
+
   // Platform-specific implementation.
   void PlatformTitleChange(CefRefPtr<CefBrowser> browser,
                            const CefString &title);
@@ -67,8 +69,6 @@ private:
   // List of existing browser windows. Only accessed on the CEF UI thread.
   typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
   BrowserList browser_list_;
-
-  bool is_closing_ = false;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(SimpleHandler);

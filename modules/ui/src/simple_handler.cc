@@ -89,24 +89,8 @@ void SimpleHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
 
 bool SimpleHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-
-  // Closing the main window requires special handling. See the DoClose()
-  // documentation in the CEF header for a detailed destription of this
-  // process.
-  if (browser_list_.size() == 1) {
-    // Set a flag to indicate that the window close should be allowed.
-    is_closing_ = true;
-  }
-
-  // Allow the close. For windowed browsers this will result in the OS close
-  // event being sent.
-  return false;
+  return true;
 }
-
-
-enum AppState { STATE_RUNNING, STATE_CLOSING_BROWSERS, STATE_READY_TO_EXIT };
-
-extern AppState g_app_state;
 
 void SimpleHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
@@ -122,9 +106,22 @@ void SimpleHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 
   if (browser_list_.empty()) {
     // All browser windows have closed. Quit the application message loop.
-    g_app_state = STATE_READY_TO_EXIT;
+    //CefQuitMessageLoop();
   }
 }
+
+void SimpleHandler::CloseAllBrowsers() {
+  CEF_REQUIRE_UI_THREAD();
+
+  INFO("already clear");
+  if (browser_list_.empty())
+    return;
+
+  INFO("closing brws");
+  for (auto &browser : browser_list_) {
+    browser->GetHost()->CloseBrowser(true);
+  }
+};
 
 void SimpleHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame, ErrorCode errorCode,
@@ -175,28 +172,13 @@ void SimpleHandler::ShowMainWindow() {
   }
 }
 
-void SimpleHandler::CloseAllBrowsers(bool force_close) {
-  if (!CefCurrentlyOn(TID_UI)) {
-    // Execute on the UI thread.
-    CefPostTask(TID_UI, base::BindOnce(&SimpleHandler::CloseAllBrowsers, this,
-                                       force_close));
-    return;
-  }
-
-  if (browser_list_.empty()) {
-    return;
-  }
-
-  for (const auto &browser : browser_list_) {
-    browser->GetHost()->CloseBrowser(force_close);
-  }
-}
-
 #if !defined(OS_MAC)
 void SimpleHandler::PlatformShowWindow(CefRefPtr<CefBrowser> browser) {
   NOTIMPLEMENTED();
 }
 #endif
+
+bool SimpleHandler::AreAllBrowsersClosed() { return is_closed_; };
 
 // CefRenderHandler IMPLEMENTATIONS
 

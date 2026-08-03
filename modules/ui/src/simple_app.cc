@@ -3,10 +3,11 @@
 // can be found in the LICENSE file.
 
 #include "simple_app.h"
-
+#include "log.h"
 #include <iostream>
 #include <string>
 
+#include "include/base/cef_logging.h"
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
 #include "include/cef_v8.h"
@@ -148,8 +149,6 @@ private:
 
 SimpleApp::SimpleApp() = default;
 
-extern void ui_register_handler(CefRefPtr<SimpleHandler> handler);
-
 void SimpleApp::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
 
@@ -161,8 +160,6 @@ void SimpleApp::OnContextInitialized() {
 
   // SimpleHandler implements browser-level callbacks.
   CefRefPtr<SimpleHandler> handler(new SimpleHandler(CEF_RUNTIME_STYLE_ALLOY));
-
-  ui_register_handler(handler);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -198,7 +195,6 @@ void SimpleApp::OnContextInitialized() {
   // Create the first browser window.
   CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
                                 nullptr, nullptr);
-  // CefBrowserHost::CloseBrowser();
 }
 
 // Called when the JavaScript context is created in the renderer process
@@ -222,3 +218,11 @@ CefRefPtr<CefClient> SimpleApp::GetDefaultClient() {
   // Called when a new browser window is created via Chrome style UI.
   return SimpleHandler::GetInstance();
 }
+
+void SimpleApp::OnBeforeCommandLineProcessing(
+    const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
+  if (process_type.empty()) {
+    command_line->AppendSwitchWithValue("ozone-platform", "x11");
+    command_line->AppendSwitchWithValue("use-angle", "gl-egl");
+  }
+};

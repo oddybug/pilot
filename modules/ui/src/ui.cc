@@ -7,25 +7,23 @@
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
 #include "include/internal/cef_ptr.h"
+#include "include/wrapper/cef_helpers.h"
+#include "log.h"
 #include "simple_app.h"
 #include "simple_handler.h"
 #include <cstdlib>
 
-enum AppState { STATE_RUNNING, STATE_CLOSING_BROWSERS, STATE_READY_TO_EXIT };
-
-AppState g_app_state = STATE_RUNNING;
-
-static CefRefPtr<SimpleApp> app;
-static CefRefPtr<SimpleHandler> g_handler = nullptr;
-
 s32 ui_start(int argc, char *argv[]) {
+  // Create a copy of |argv| on Linux because Chromium mangles the value
+  // internally (see issue #620).
+  CefScopedArgArray scoped_arg_array(argc, argv);
+  char **argv_copy = scoped_arg_array.array();
 
-  // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
 
   // SimpleApp implements application-level callbacks. It will create the first
   // browser instance in OnContextInitialized() after CEF has initialized.
-  app = CefRefPtr<SimpleApp>(new SimpleApp);
+  CefRefPtr<SimpleApp> app = CefRefPtr<SimpleApp>(new SimpleApp);
   // CEF applications have multiple sub-processes (render, GPU, etc) that share
   // the same executable. This function checks the command-line and, if this is
   // a sub-process, executes the appropriate logic.
@@ -42,6 +40,10 @@ s32 ui_start(int argc, char *argv[]) {
   // Specify CEF global settings here.
   CefSettings settings;
   settings.windowless_rendering_enabled = true;
+
+  // TODO: not crossplatform
+  CefString(&settings.root_cache_path).FromString("/tmp/pilot_cef_cache");
+
   // When generating projects with CMake the CEF_USE_SANDBOX value will be
   // defined / automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line
   // to disable / use of the sandbox.
@@ -68,17 +70,14 @@ s32 ui_start(int argc, char *argv[]) {
 // TODO: check if cef is started
 void ui_message_loop() { CefDoMessageLoopWork(); };
 
-void ui_register_handler(CefRefPtr<SimpleHandler> handler) {
-  g_handler = handler;
+bool ui_can_close() {
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  return handler->AreAllBrowsersClosed();
+};
+
+void ui_close_browsers() {
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  handler->CloseAllBrowsers();
 }
 
-void ui_close() {
-  if (g_app_state != STATE_RUNNING)
-    return;
-  if (g_handler.get()) {
-    g_app_state = STATE_CLOSING_BROWSERS;
-    g_handler.get()->CloseAllBrowsers(1);
-  } else {
-    g_app_state = STATE_READY_TO_EXIT;
-  }
-}
+void ui_close() { CefShutdown(); };

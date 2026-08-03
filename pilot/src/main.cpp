@@ -1,21 +1,19 @@
 #include "SDL3/SDL_events.h"
-#include "material.h"
+
 #include "ui.h"
 
 extern "C" {
 #include "camera.h"
 #include "entity.h"
-#include "global.h" // Assuming 'state' is declared here as an extern int
+#include "global.h"
 #include "io_manager.h"
 #include "log.h"
+#include "material.h"
 #include "object.h"
 #include "render.h"
 #include "shader.h"
 #include "texture.h"
 }
-
-extern int g_app_state;
-const int UI_STATE_READY_TO_EXIT = 2;
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -63,9 +61,11 @@ void start_camera() {
 
 int main(int argc, char *argv[]) {
 
-  //  if (ui_start(argc, argv) != 0) {
-  //    return -1;
-  //  }
+  if (ui_start(argc, argv) != 0) {
+    return -1;
+  }
+
+  INFO("BROWSER PROCESS");
 
   iom_init();
   ren_init();
@@ -89,14 +89,13 @@ int main(int argc, char *argv[]) {
   while (state) {
     iom_poll_events();
     ren_draw_frame();
-
-    //  ui_message_loop();
+    ui_message_loop();
   }
 
-  INFO("QUITTING");
+  // ui_close_browsers();
 
+  ui_close();
   iom_quit();
-  // ui_close();
 
   return 0;
 };

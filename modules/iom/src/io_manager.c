@@ -4,6 +4,7 @@
 #include "glad/egl.h"
 #include "glad/gl.h"
 
+#include <GL/gl.h>
 #include <stdio.h>
 
 #include <SDL3/SDL.h>
@@ -16,8 +17,8 @@
 
 #define WINDOW_NAME "PILOT"
 
-#define DEFAULT_SCR_WIDTH 800
-#define DEFAULT_SCR_HEIGHT 600
+#define DEFAULT_SCR_WIDTH 1280
+#define DEFAULT_SCR_HEIGHT 720
 
 /*
  * SDL
@@ -171,19 +172,6 @@ extern s8 iom_init() {
             err);
   }
 
-  //// TODO: user need to have control over the main loop
-  // while (!done) {
-  //   SDL_Event event;
-  //   while (SDL_PollEvent(&event)) {
-  //     if (event.type == SDL_EVENT_QUIT) {
-  //       done = true;
-  //     }
-  //   }
-
-  //  // Render loop
-  //}
-
-  // iom_quit();
   return 0;
 }
 
@@ -199,6 +187,11 @@ extern void iom_poll_events() {
     _iom_event_callback(&event);
   }
 
-
   SDL_GL_SwapWindow(window);
+};
+
+void iom_resize_window(u32 width, u32 height) {
+  // TODO: this will need to change when tilling
+
+  glViewport(0, 0, width, height);
 };

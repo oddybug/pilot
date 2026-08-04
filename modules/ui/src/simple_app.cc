@@ -170,8 +170,8 @@ void SimpleApp::OnContextInitialized() {
   // that instead of the default URL.
   url = command_line->GetSwitchValue("url");
   if (url.empty()) {
-    url = "file:///home/oddy/repos/pilot/ui/index.html"; // TODO: THIS DIR IS
-                                                         // HARDCODED !URGENT
+    url = "https://www.google.com"; // TODO: THIS DIR IS
+                                    // HARDCODED !URGENT
   }
 
   // Information used when creating the native window.

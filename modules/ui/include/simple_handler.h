@@ -10,6 +10,8 @@
 #include "include/cef_client.h"
 #include "include/cef_render_handler.h"
 
+#include "types.h"
+
 class SimpleHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
@@ -54,9 +56,17 @@ public:
 
   bool AreAllBrowsersClosed();
 
-private:
+  using TextureCallbackFn = void (*)(u8 *, u32, u32);
 
+  void SetTextureCallback(TextureCallbackFn clbk);
+
+  void ResizeBrowsers(u32 width, u32 height);
+
+private:
   bool is_closed_ = false;
+
+  u32 window_w = 0;
+  u32 window_h = 0;
 
   // Platform-specific implementation.
   void PlatformTitleChange(CefRefPtr<CefBrowser> browser,
@@ -127,6 +137,9 @@ private:
   //
   // END OF CefRenderHandler INTERFACE
   //
+
+private:
+  TextureCallbackFn text_callback_ = nullptr;
 };
 
 #endif // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

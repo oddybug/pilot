@@ -25,6 +25,8 @@ extern struct object_T objects[MAX_OBJECTS];
 
 s32 ren_primitive_create_cube();
 
+s32 ren_primitive_create_hud_plane();
+
 s32 ren_primitive_create_plane();
 
 s32 ren_delete_object(s32 id);

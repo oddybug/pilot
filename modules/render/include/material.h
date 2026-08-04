@@ -18,6 +18,7 @@ extern s32 ren_create_material();
 
 extern s32 ren_material_set_texture(s32 m_id, s32 t_id);
 
+struct material_T ren_get_material(s32 id);
 
 #ifdef __cplusplus
 }

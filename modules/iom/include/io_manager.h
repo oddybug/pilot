@@ -14,6 +14,8 @@ extern void iom_set_event_callback(void (*callback)(SDL_Event *e));
 
 extern void iom_poll_events();
 
+extern void iom_resize_window(u32 width, u32 height);
+
 extern s8 iom_quit();
 
 #ifdef __cplusplus

@@ -1,10 +1,12 @@
 #version 460 core
-out vec4 FragColor;
-in vec2 TexCoords;
 
-uniform sampler2D screenTexture;
+in vec3 normal;
+in vec2 text_coord;
+
+out vec4 frag_color;
+
+uniform sampler2D texture_f;
 
 void main() {
-    vec2 flippedCoords = vec2(TexCoords.x, TexCoords.y);
-    FragColor = texture(screenTexture, flippedCoords);
+    frag_color = texture(texture_f, text_coord); //frag_color_v;
 }

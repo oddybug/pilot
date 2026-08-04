@@ -30,3 +30,5 @@ s32 ren_material_set_texture(s32 m_id, s32 t_id) {
   materials[m_id].texture = t_id;
   return 0;
 };
+
+struct material_T ren_get_material(s32 id) { return materials[id]; };

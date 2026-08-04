@@ -106,7 +106,7 @@ void SimpleHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 
   if (browser_list_.empty()) {
     // All browser windows have closed. Quit the application message loop.
-    //CefQuitMessageLoop();
+    // CefQuitMessageLoop();
   }
 }
 
@@ -196,7 +196,10 @@ bool SimpleHandler::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
 // TODO: to implement
 void SimpleHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
   // TODO: SET AS DESIRED HARDCODED !URGENT
-  rect.Set(0, 0, 1280, 720);
+  assert(window_h != 0);
+  assert(window_w != 0);
+
+  rect.Set(0, 0, window_w, window_h);
 }
 
 // TODO: to implement
@@ -218,14 +221,28 @@ void SimpleHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {}
 void SimpleHandler::OnPopupSize(CefRefPtr<CefBrowser> browser,
                                 const CefRect &rect) {}
 
+void SimpleHandler::SetTextureCallback(TextureCallbackFn clbk) {
+  text_callback_ = clbk;
+};
+
+void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
+  window_w = width;
+  window_h = height;
+
+  for (auto browser : browser_list_) {
+    if (browser && browser->GetHost()) {
+      browser->GetHost()->WasResized();
+    }
+  }
+};
+
 // TODO: to implement
 void SimpleHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                             PaintElementType type, const RectList &dirtyRects,
                             const void *buffer, int width, int height) {
-  // This is where your pixel-buffer rendering logic will eventually go.
-  // Literal pixels ontoscreen
 
   INFO("COPY PIXELS ENABLED");
+  text_callback_((u8 *)buffer, width, height);
 }
 
 // TODO: to implement

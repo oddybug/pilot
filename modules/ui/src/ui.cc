@@ -55,14 +55,8 @@ s32 ui_start(int argc, char *argv[]) {
   // fails or if early exit is desired (for example, due to process singleton
   // relaunch behavior).
   if (!CefInitialize(main_args, settings, app.get(), nullptr)) {
-    return -1; // CefGetExitCode();
+    return -1; // TODO: CefGetExitCode();
   }
-
-  // Run the CEF message loop. This will block until CefQuitMessageLoop() is
-  // called.
-  // CefRunMessageLoop();
-
-  // CefDoMessageLoopWork();
 
   return 0;
 };
@@ -79,5 +73,15 @@ void ui_close_browsers() {
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   handler->CloseAllBrowsers();
 }
+
+void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
+                                             u32 height)) {
+  SimpleHandler::GetInstance()->SetTextureCallback(clbk);
+};
+
+void ui_resize_window(u32 width, u32 height) {
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  handler->ResizeBrowsers(width, height);
+};
 
 void ui_close() { CefShutdown(); };

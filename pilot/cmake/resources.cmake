@@ -15,7 +15,8 @@ foreach(FILE ${RESOURCE_FILES})
     OUTPUT "${DST_FILE}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SRC_FILE}" "${DST_FILE}"
     DEPENDS "${SRC_FILE}"
-    COMMENT "Updating resource: ${FILE}")
+    COMMENT "Updating resource: ${FILE} from: ${RESOURCE_DIR} to:
+    ${RESOURCE_DEST_DIR}")
   list(APPEND OUTPUT_FILES "${DST_FILE}")
 endforeach()
 

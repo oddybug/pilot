@@ -5,12 +5,17 @@
 #include "glad/gl.h"
 
 #include <GL/gl.h>
+#include <assert.h>
 #include <stdio.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
 #include "io_manager.h"
+
+#include "data/serial.h"
+
+static struct serial_T *serial;
 
 #define OPENGL_MAJOR 4
 #define OPENGL_MINOR 6
@@ -194,4 +199,26 @@ void iom_resize_window(u32 width, u32 height) {
   // TODO: this will need to change when tilling
 
   glViewport(0, 0, width, height);
+};
+
+s32 iom_create_target() {
+  if (serial == NULL) {
+    serial = gen_serial_create_from(1);
+  }
+
+  assert(serial != NULL);
+
+  s32 id;
+  if (gen_serial_stamp(serial, &id) != 0)
+    return -1;
+
+  return id;
+}
+
+void iom_set_target(s32 id, struct rect_T bounds, s32 z,
+                    void (*iom_callback_fn)(SDL_Event *e)) {
+  targets[id].id = id;
+  targets[id].bounds = bounds;
+  targets[id].z = z;
+  targets[id].iom_callback_fn = iom_callback_fn;
 };

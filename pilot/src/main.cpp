@@ -1,6 +1,6 @@
 #include "SDL3/SDL_events.h"
 
-#include "SDL3/SDL_oldnames.h"
+#include "dmath.h"
 #include "ui.h"
 
 extern "C" {
@@ -96,9 +96,14 @@ void ui_texture_clbk(u8 *bitmap, u32 width, u32 height) {
   INFO("callbacking");
 
   // TODO: think a clever way to do that. Temporal.
-  struct material_T mat = ren_get_material(g_hud_m_id);
+  // struct material_T mat = ren_get_material(g_hud_m_id);
 
-  ren_update_texture(mat.texture, bitmap, width, height);
+  struct rect_T b = {
+      .x = 0, .y = 0, .w = (s32)width, .h = (s32)height}; // Potential
+                                                          // oberflow
+                                                          // bug
+  ren_update_ui_background(b, bitmap);
+  // ren_update_texture(mat.texture, bitmap, width, height);
 }
 
 int main(int argc, char *argv[]) {
@@ -111,6 +116,10 @@ int main(int argc, char *argv[]) {
 
   iom_init();
   ui_resize_window(1280, 720);
+
+  struct rect_T rect = {.x = 0, .y = 0, .w = 800, .h = 160};
+  ren_set_viewport(rect);
+
   ren_init();
 
   iom_set_event_callback(sdl_callback);
@@ -122,18 +131,25 @@ int main(int argc, char *argv[]) {
       ren_create_program_from_files(SHADERS_SOURCE_DIR "vertex_texture.glsl",
                                     SHADERS_SOURCE_DIR "fragment_texture.glsl");
 
-  s32 ui_e = ren_create_entity();
-
-  s32 ui_hud = ren_primitive_create_hud_plane();
-  g_hud_m_id = ren_create_material();
   s32 cef_texture_id = create_ui_texture();
-  ren_material_set_texture(g_hud_m_id, cef_texture_id);
-  s32 p_cef_id = ren_create_program_from_files(SHADERS_SOURCE_DIR "cef_v.glsl",
-                                               SHADERS_SOURCE_DIR "cef_f.glsl");
 
-  ren_entity_add_component(ui_e, COMPONENT_MATERIAL, g_hud_m_id);
-  ren_entity_add_component(ui_e, COMPONENT_OBJECT, ui_hud);
-  ren_entity_add_component(ui_e, COMPONENT_PROGRAM, p_cef_id);
+  struct rect_T rect_cef = {.x = 0, .y = 0, .w = 1280, .h = 720};
+  ren_set_ui_background(cef_texture_id, rect_cef);
+
+  // s32 ui_e = ren_create_entity();
+
+  // s32 ui_hud = ren_primitive_create_hud_plane();
+  // g_hud_m_id = ren_create_material();
+  // s32 cef_texture_id = create_ui_texture();
+  // ren_material_set_texture(g_hud_m_id, cef_texture_id);
+  // s32 p_cef_id = ren_create_program_from_files(SHADERS_SOURCE_DIR
+  // "cef_v.glsl",
+  //                                              SHADERS_SOURCE_DIR
+  //                                              "cef_f.glsl");
+
+  // ren_entity_add_component(ui_e, COMPONENT_MATERIAL, g_hud_m_id);
+  // ren_entity_add_component(ui_e, COMPONENT_OBJECT, ui_hud);
+  // ren_entity_add_component(ui_e, COMPONENT_PROGRAM, p_cef_id);
 
   s32 e1 = ren_create_entity();
   s32 cube = ren_primitive_create_cube();

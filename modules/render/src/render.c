@@ -19,6 +19,13 @@ struct active_buffers_T {
 static struct active_buffers_T active_buffers = {
     .color = 0, .depth = 0, .stencil = 0};
 
+static struct rect_T ren_viewport_;
+
+static struct rect_T ui_viewport_;
+static s32 ui_object_;
+static s32 ui_program_;
+static s32 ui_texture_;
+
 /**
  * @brief Clean all OpenGL buffers that are active.
  */
@@ -63,7 +70,26 @@ s8 ren_draw_frame() {
 
   s32 i;
 
+  // First the ui texture
+
+  struct object_T ui_o = objects[ui_object_];
+  struct program_T ui_p = programs[ui_program_];
+
+  glViewport(ui_viewport_.x, ui_viewport_.y, ui_viewport_.w, ui_viewport_.h);
+  glDisable(GL_DEPTH_TEST);
+
+  glUseProgram(ui_p.id);
+
+  glBindTexture(GL_TEXTURE_2D, textures[ui_texture_].gl_id);
+  glBindVertexArray(ui_o.VAO);
+  glDrawArrays(GL_TRIANGLES, 0, ui_o.n_triangles * 3);
+
+  glEnable(GL_DEPTH_TEST);
+
   // TODO: SAFETY CHECK AND REDESING ENTIRELY
+
+  glViewport(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
+             ren_viewport_.h);
 
   for (i = 0; i < MAX_ENTITIES; i++) {
     struct entity_T e = entities[i];
@@ -99,11 +125,40 @@ s8 ren_draw_frame() {
     glDrawArrays(GL_TRIANGLES, 0, o.n_triangles * 3);
   }
 
-  // for e in entities{
-  // use pragram from entity
-  // update in and uniforms
-  // draw
-  // }
-
   return 0;
 }
+
+void ren_set_viewport(struct rect_T bound) { ren_viewport_ = bound; };
+
+void ren_set_ui_background(s32 texture_id, struct rect_T bound) {
+
+  ui_texture_ = texture_id;
+  ui_viewport_ = bound;
+
+  if (ui_object_ == 0) {
+    ui_object_ = ren_primitive_create_hud_plane();
+  }
+
+  if (ui_program_ == 0) {
+    ui_program_ = ren_create_program_from_files(
+        SHADERS_SOURCE_DIR "cef_v.glsl", SHADERS_SOURCE_DIR "cef_f.glsl");
+  }
+};
+
+void ren_update_ui_background_bitmap(u8 *bitmap) {
+  if (ui_texture_ == 0) {
+    ERROR("ui texture has not been initialized");
+    return;
+  }
+  ren_update_texture(ui_texture_, bitmap, ui_viewport_.w, ui_viewport_.h);
+};
+
+void ren_update_ui_background(struct rect_T bound, u8 *bitmap) {
+  if (ui_texture_ == 0) {
+    ERROR("ui texture has not been initialized");
+    return;
+  }
+
+  ui_viewport_ = bound;
+  ren_update_texture(ui_texture_, bitmap, bound.w, bound.h);
+};

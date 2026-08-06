@@ -9,13 +9,14 @@
 # DEMO
 file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
      "${CMAKE_CURRENT_SOURCE_DIR}/src/global.c"
-     "${CMAKE_CURRENT_SOURCE_DIR}/include/stb_image.h")
+     "${THIRD_PARTY_DIR}/stb/stb_image.h")
 
 add_executable(pilot "${APP_SOURCES}")
 
 # target_sources(pilot PRIVATE "${APP_SOURCES}")
 
-target_include_directories(pilot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(pilot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                                         "${THIRD_PARTY_DIR}/stb")
 
 target_link_libraries(pilot PRIVATE ui iom render generic cglm SDL3::SDL3)
 
@@ -51,5 +52,4 @@ if(OS_LINUX)
   set_linux_suid_permissions(pilot "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
 endif()
 
-include(cmake/directories.cmake)
 include(cmake/resources.cmake)

@@ -26,12 +26,19 @@ extern void iom_set_event_callback(void (*callback)(SDL_Event *e));
 
 extern void iom_poll_events();
 
-extern void iom_resize_window(u32 width, u32 height);
+extern void iom_resize_target(s32 id, struct rect_T bounds);
 
 extern s32 iom_create_target();
 
 extern void iom_set_target(s32 id, struct rect_T bounds, s32 z,
-                          void (*iom_callback_fn)(SDL_Event *e));
+                           void (*iom_callback_fn)(SDL_Event *e));
+
+/**
+ * @brief Check if io manager can close correctly.
+ *
+ * @return 1 if can close and 0 otherwise.
+ */
+extern s32 iom_can_close();
 
 extern s8 iom_quit();
 

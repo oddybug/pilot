@@ -53,3 +53,4 @@ if(OS_LINUX)
 endif()
 
 include(cmake/resources.cmake)
+include(cmake/website.cmake)

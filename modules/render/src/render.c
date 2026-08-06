@@ -29,9 +29,9 @@ static s32 ui_texture_;
 /**
  * @brief Clean all OpenGL buffers that are active.
  */
-static void ren_clean_screen(void);
+static void ren_clean_screen_(void);
 
-static void ren_clean_screen(void) {
+static void ren_clean_screen_(void) {
 
   u32 flag = 0;
 
@@ -47,8 +47,9 @@ static void ren_clean_screen(void) {
     flag |= GL_STENCIL_BUFFER_BIT;
   }
 
-  glClearColor(0.8f, 0.8f, 0.95f, 1.0f);
   glClear(flag);
+
+  glClearColor(0.8f, 0.8f, 0.95f, 1.0f);
 };
 
 s32 ren_init() {
@@ -59,19 +60,9 @@ s32 ren_init() {
   return 0;
 };
 
-s8 ren_draw_frame() {
-  ren_clean_screen();
+static void ren_draw_ui_frame_();
 
-  mat4 view;
-  ren_get_view_matrix(view);
-
-  mat4 projection;
-  ren_get_projection_matrix(&projection);
-
-  s32 i;
-
-  // First the ui texture
-
+static void ren_draw_ui_frame_() {
   struct object_T ui_o = objects[ui_object_];
   struct program_T ui_p = programs[ui_program_];
 
@@ -84,13 +75,28 @@ s8 ren_draw_frame() {
   glBindVertexArray(ui_o.VAO);
   glDrawArrays(GL_TRIANGLES, 0, ui_o.n_triangles * 3);
 
-  glEnable(GL_DEPTH_TEST);
-
-  // TODO: SAFETY CHECK AND REDESING ENTIRELY
-
+  glEnable(GL_SCISSOR_TEST);
+  glScissor(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w, ren_viewport_.h);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glDisable(GL_SCISSOR_TEST);
   glViewport(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
              ren_viewport_.h);
+};
 
+s8 ren_draw_frame() {
+  ren_clean_screen_();
+
+  mat4 view;
+  ren_get_view_matrix(view);
+
+  mat4 projection;
+  ren_get_projection_matrix(&projection);
+
+  s32 i;
+
+  ren_draw_ui_frame_();
+
+  // TODO: SAFETY CHECK AND REDESING ENTIRELY
   for (i = 0; i < MAX_ENTITIES; i++) {
     struct entity_T e = entities[i];
 

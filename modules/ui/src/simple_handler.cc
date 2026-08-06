@@ -195,7 +195,6 @@ bool SimpleHandler::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
 
 // TODO: to implement
 void SimpleHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
-  // TODO: SET AS DESIRED HARDCODED !URGENT
   assert(window_h != 0);
   assert(window_w != 0);
 

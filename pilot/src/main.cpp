@@ -22,6 +22,9 @@ extern "C" {
 
 static s32 g_hud_m_id;
 
+static s32 g_gl_target;
+static s32 g_ui_target;
+
 s32 create_texture(const char *file) {
   int width, height, nr_channels;
   u8 *data = stbi_load(file, &width, &height, &nr_channels, 0);
@@ -37,7 +40,11 @@ s32 create_texture(const char *file) {
   }
 }
 
-void sdl_callback(SDL_Event *e) {
+void sdl_gl_callback(SDL_Event *e) { INFO("GL CALLBACK"); }
+
+void sdl_ui_callback(SDL_Event *e) {
+  INFO("UI CALLBACK");
+
   switch (e->type) {
   case SDL_EVENT_QUIT:
     state = 0;
@@ -57,7 +64,10 @@ void sdl_callback(SDL_Event *e) {
     s32 height = e->window.data2;
     INFO("window resized: (w: %d, h: %d)", width, height);
     ui_resize_window(width, height);
-    iom_resize_window(width, height);
+
+    struct rect_T b = {.x = 0, .y = 0, .w = width, .h = height};
+    iom_resize_target(g_ui_target, b);
+
     break;
   }
   default:
@@ -106,6 +116,20 @@ void ui_texture_clbk(u8 *bitmap, u32 width, u32 height) {
   // ren_update_texture(mat.texture, bitmap, width, height);
 }
 
+void create_targets() {
+
+  g_gl_target = iom_create_target();
+  g_ui_target = iom_create_target();
+
+  struct rect_T b_ui = {.x = 0, .y = 0, .w = 1280, .h = 720}; // TODO: hardcoded
+                                                              // !URGENT
+
+  struct rect_T b_gl = {.x = 0, .y = 0, .w = 400, .h = 400}; // TODO: hardcoded
+                                                             // !URGENT
+  iom_set_target(g_ui_target, b_ui, 1, sdl_ui_callback);
+  iom_set_target(g_gl_target, b_gl, 2, sdl_gl_callback);
+}
+
 int main(int argc, char *argv[]) {
 
   if (ui_start(argc, argv) != 0) {
@@ -117,12 +141,13 @@ int main(int argc, char *argv[]) {
   iom_init();
   ui_resize_window(1280, 720);
 
-  struct rect_T rect = {.x = 0, .y = 0, .w = 800, .h = 160};
+  struct rect_T rect = {.x = 0, .y = 0, .w = 400, .h = 400};
   ren_set_viewport(rect);
 
   ren_init();
+  create_targets();
 
-  iom_set_event_callback(sdl_callback);
+  // iom_set_event_callback(sdl_callback);
   start_camera();
 
   s32 texture_id = create_texture(TEXTURES_SOURCE_DIR "gato-joel.png");
@@ -136,21 +161,6 @@ int main(int argc, char *argv[]) {
   struct rect_T rect_cef = {.x = 0, .y = 0, .w = 1280, .h = 720};
   ren_set_ui_background(cef_texture_id, rect_cef);
 
-  // s32 ui_e = ren_create_entity();
-
-  // s32 ui_hud = ren_primitive_create_hud_plane();
-  // g_hud_m_id = ren_create_material();
-  // s32 cef_texture_id = create_ui_texture();
-  // ren_material_set_texture(g_hud_m_id, cef_texture_id);
-  // s32 p_cef_id = ren_create_program_from_files(SHADERS_SOURCE_DIR
-  // "cef_v.glsl",
-  //                                              SHADERS_SOURCE_DIR
-  //                                              "cef_f.glsl");
-
-  // ren_entity_add_component(ui_e, COMPONENT_MATERIAL, g_hud_m_id);
-  // ren_entity_add_component(ui_e, COMPONENT_OBJECT, ui_hud);
-  // ren_entity_add_component(ui_e, COMPONENT_PROGRAM, p_cef_id);
-
   s32 e1 = ren_create_entity();
   s32 cube = ren_primitive_create_cube();
   s32 m_id = ren_create_material();
@@ -160,7 +170,7 @@ int main(int argc, char *argv[]) {
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
   ren_entity_add_component(e1, COMPONENT_PROGRAM, p_id);
 
-  while (state) {
+  while (!iom_can_close()) {
     iom_poll_events();
     ren_draw_frame();
     ui_message_loop();

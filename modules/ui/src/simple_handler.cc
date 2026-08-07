@@ -40,6 +40,14 @@ SimpleHandler::~SimpleHandler() { g_instance = nullptr; }
 // static
 SimpleHandler *SimpleHandler::GetInstance() { return g_instance; }
 
+CefRefPtr<CefBrowser> SimpleHandler::GetBrowser() const {
+  CEF_REQUIRE_UI_THREAD();
+  if (!browser_list_.empty()) {
+    return browser_list_.front();
+  }
+  return nullptr;
+}
+
 bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {

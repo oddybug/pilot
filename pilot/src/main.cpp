@@ -1,10 +1,11 @@
 #include "SDL3/SDL_events.h"
+#include "SDL3/SDL_mouse.h"
 
-#include "dmath.h"
 #include "ui.h"
 
 extern "C" {
 #include "camera.h"
+#include "dmath.h"
 #include "entity.h"
 #include "global.h"
 #include "io_manager.h"
@@ -40,6 +41,81 @@ s32 create_texture(const char *file) {
   }
 }
 
+c16 sdl_key_to_c16(SDL_Keycode key, SDL_Keymod mod) {
+  bool shift = (mod & SDL_KMOD_SHIFT) != 0;
+
+  if (key >= SDLK_A && key <= SDLK_Z) {
+    return static_cast<char16_t>(shift ? (key - 'a' + 'A') : key);
+  }
+
+  if (key >= SDLK_0 && key <= SDLK_9) {
+    if (!shift)
+      return static_cast<char16_t>(key);
+
+    switch (key) {
+    case SDLK_1:
+      return u'!';
+    case SDLK_2:
+      return u'@';
+    case SDLK_3:
+      return u'#';
+    case SDLK_4:
+      return u'$';
+    case SDLK_5:
+      return u'%';
+    case SDLK_6:
+      return u'^';
+    case SDLK_7:
+      return u'&';
+    case SDLK_8:
+      return u'*';
+    case SDLK_9:
+      return u'(';
+    case SDLK_0:
+      return u')';
+    }
+  }
+
+  switch (key) {
+  case SDLK_RETURN:
+    return u'\r';
+  case SDLK_BACKSPACE:
+    return u'\b';
+  case SDLK_TAB:
+    return u'\t';
+  case SDLK_SPACE:
+    return u' ';
+  case SDLK_ESCAPE:
+    return 0x1B;
+
+  case SDLK_MINUS:
+    return shift ? u'_' : u'-';
+  case SDLK_EQUALS:
+    return shift ? u'+' : u'=';
+  case SDLK_LEFTBRACKET:
+    return shift ? u'{' : u'[';
+  case SDLK_RIGHTBRACKET:
+    return shift ? u'}' : u']';
+  case SDLK_BACKSLASH:
+    return shift ? u'|' : u'\\';
+  case SDLK_SEMICOLON:
+    return shift ? u':' : u';';
+  case SDLK_APOSTROPHE:
+    return shift ? u'"' : u'\'';
+  case SDLK_GRAVE:
+    return shift ? u'~' : u'`';
+  case SDLK_COMMA:
+    return shift ? u'<' : u',';
+  case SDLK_PERIOD:
+    return shift ? u'>' : u'.';
+  case SDLK_SLASH:
+    return shift ? u'?' : u'/';
+
+  default:
+    return 0;
+  }
+}
+
 void sdl_gl_callback(SDL_Event *e) { INFO("GL CALLBACK"); }
 
 void sdl_ui_callback(SDL_Event *e) {
@@ -49,16 +125,19 @@ void sdl_ui_callback(SDL_Event *e) {
   case SDL_EVENT_QUIT:
     state = 0;
     break;
-  case SDL_EVENT_KEY_DOWN:
-    switch (e->key.key) {
-    case SDLK_ESCAPE:
-      state = 0;
-      break;
-    default:
-      break;
-    }
-
+  case SDL_EVENT_KEY_DOWN: {
+    char16_t ch = sdl_key_to_c16(e->key.key, SDL_GetModState());
+    ui_send_mouse_keydown(ch);
     break;
+  }
+  case SDL_EVENT_KEY_UP: {
+
+    char16_t ch = sdl_key_to_c16(e->key.key, SDL_GetModState());
+    ui_send_mouse_keyup(ch);
+    break;
+  }
+
+  break;
   case SDL_EVENT_WINDOW_RESIZED: {
     s32 width = e->window.data1;
     s32 height = e->window.data2;
@@ -68,6 +147,26 @@ void sdl_ui_callback(SDL_Event *e) {
     struct rect_T b = {.x = 0, .y = 0, .w = width, .h = height};
     iom_resize_target(g_ui_target, b);
 
+    break;
+  }
+
+  case SDL_EVENT_MOUSE_MOTION: {
+    point_T m_p = {.x = (s32)e->motion.x, .y = (s32)e->motion.y};
+    ui_send_mouse_event_motion(m_p);
+    break;
+  }
+
+  case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+    switch (e->button.button) {
+    case SDL_BUTTON_LEFT: {
+      point_T m_p = {.x = (s32)e->motion.x, .y = (s32)e->motion.y};
+      ui_send_mouse_event_click(MBTN_LEFT, m_p);
+    }
+    default:
+      break;
+    }
+    point_T m_p = {.x = (s32)e->motion.x, .y = (s32)e->motion.y};
+    ui_send_mouse_event_motion(m_p);
     break;
   }
   default:
@@ -124,9 +223,14 @@ void create_targets() {
   struct rect_T b_ui = {.x = 0, .y = 0, .w = 1280, .h = 720}; // TODO: hardcoded
                                                               // !URGENT
 
-  struct rect_T b_gl = {.x = 0, .y = 0, .w = 400, .h = 400}; // TODO: hardcoded
-                                                             // !URGENT
+  // !URGENT
   iom_set_target(g_ui_target, b_ui, 1, sdl_ui_callback);
+
+  // SDL 0, 0 is top-left and GL and CEF are bottom-left.
+  struct point_T w_s = iom_get_window_size();
+  INFO("gl bounds: w - %d | h - %d", w_s.x, w_s.y);
+  struct rect_T b_gl = {
+      .x = 0, .y = w_s.y - 400, .w = 400, .h = 400}; // TODO: hardcoded
   iom_set_target(g_gl_target, b_gl, 2, sdl_gl_callback);
 }
 
@@ -145,8 +249,8 @@ int main(int argc, char *argv[]) {
   ren_set_viewport(rect);
 
   ren_init();
-  create_targets();
 
+  create_targets();
   // iom_set_event_callback(sdl_callback);
   start_camera();
 

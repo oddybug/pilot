@@ -34,6 +34,13 @@ extern void iom_set_target(s32 id, struct rect_T bounds, s32 z,
                            void (*iom_callback_fn)(SDL_Event *e));
 
 /**
+ * @brief returns widnows width and height
+ *
+ * @return point_T.x = width and point_T.y = height
+ */
+extern struct point_T iom_get_window_size();
+
+/**
  * @brief Check if io manager can close correctly.
  *
  * @return 1 if can close and 0 otherwise.

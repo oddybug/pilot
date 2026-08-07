@@ -310,6 +310,13 @@ void iom_set_target(s32 id, struct rect_T bounds, s32 z,
   targets[id].iom_callback_fn = iom_callback_fn;
 };
 
+extern struct point_T iom_get_window_size() {
+  s32 w, h = 0;
+  SDL_GetWindowSize(window, &w, &h);
+  struct point_T res = {.x = w, .y = h};
+  return res;
+};
+
 extern s32 iom_can_close() { return !g_running; };
 
 extern s8 iom_quit() {

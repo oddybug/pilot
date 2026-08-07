@@ -7,6 +7,8 @@
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
 #include "include/internal/cef_ptr.h"
+#include "include/internal/cef_types.h"
+#include "include/internal/cef_types_wrappers.h"
 #include "include/wrapper/cef_helpers.h"
 #include "log.h"
 #include "simple_app.h"
@@ -63,6 +65,78 @@ s32 ui_start(int argc, char *argv[]) {
 
 // TODO: check if cef is started
 void ui_message_loop() { CefDoMessageLoopWork(); };
+
+void ui_send_mouse_keydown(c16 key) {
+
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  CefRefPtr<CefBrowser> browser = handler->GetBrowser();
+
+  if (!browser)
+    return;
+
+  CefKeyEvent k_e;
+  k_e.type = KEYEVENT_RAWKEYDOWN;
+  k_e.windows_key_code = key;
+  k_e.native_key_code = key;
+
+  browser->GetHost()->SendKeyEvent(k_e);
+
+  k_e.type = KEYEVENT_CHAR;
+  k_e.character = key;
+  k_e.unmodified_character = key;
+
+  browser->GetHost()->SendKeyEvent(k_e);
+}
+
+extern void ui_send_mouse_keyup(c16 key) {
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  CefRefPtr<CefBrowser> browser = handler->GetBrowser();
+
+  if (!browser)
+    return;
+
+  CefKeyEvent k_e;
+  k_e.type = KEYEVENT_KEYUP;
+  k_e.windows_key_code = key;
+  k_e.native_key_code = key;
+
+  browser->GetHost()->SendKeyEvent(k_e);
+};
+
+void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p) {
+
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  CefRefPtr<CefBrowser> browser = handler->GetBrowser();
+
+  if (!browser)
+    return;
+
+  CefMouseEvent m_e;
+  m_e.x = m_p.x;
+  m_e.y = m_p.y;
+
+  browser->GetHost()->SendMouseClickEvent(m_e, (cef_mouse_button_type_t)mb,
+                                          false, 1);
+
+  browser->GetHost()->SendMouseClickEvent(m_e, (cef_mouse_button_type_t)mb,
+                                          true, 1);
+};
+
+void ui_send_mouse_event_motion(struct point_T m_p) {
+
+  CefMouseEvent m_e;
+
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  CefRefPtr<CefBrowser> browser = handler->GetBrowser();
+  // auto host = handler.bro
+
+  if (!browser)
+    return;
+
+  m_e.x = m_p.x;
+  m_e.y = m_p.y;
+  browser->GetHost()->SendMouseMoveEvent(m_e, false);
+};
 
 bool ui_can_close() {
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();

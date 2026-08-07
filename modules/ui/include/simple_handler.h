@@ -30,6 +30,8 @@ public:
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
 
+  CefRefPtr<CefBrowser> GetBrowser() const;
+
   // Handle incoming messages
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
@@ -83,6 +85,7 @@ private:
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(SimpleHandler);
 
+public:
   // SUPORT FOR OSR -- CefRenderHandler
   // TODO: SOME METHODS ARE NOT IMPLEMENTED AND ARE LEFT EMPTY
 

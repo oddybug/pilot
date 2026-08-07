@@ -6,6 +6,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <uchar.h>
 
 // Integers Unsigned
 
@@ -20,6 +21,11 @@ typedef int8_t s8;
 typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
+
+// Cahrs
+typedef char c8;
+typedef char16_t c16;
+typedef char32_t c32;
 
 // Floats
 

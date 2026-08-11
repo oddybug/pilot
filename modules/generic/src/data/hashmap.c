@@ -5,22 +5,29 @@
 #include "data/hashmap.h"
 #include "log.h"
 
-struct item_T {
-  struct item_T *next;
-  void *key;
-  void *value;
-};
-
 struct map_T {
   u32 size;
   struct item_T **bucket;
 
   u32 (*hash_fn)(const void *key);
   u32 (*cmp_fn)(const void *a, const void *b);
+  void (*free_item)(struct item_T *item);
+};
+
+static void gen_map_free_item_(struct map_T *map, struct item_T *item);
+
+static void gen_map_free_item_(struct map_T *map, struct item_T *item) {
+  if (map->free_item)
+    map->free_item(item);
+
+  free(item->key);
+  free(item->value);
+  free(item);
 };
 
 struct map_T *gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
-                             u32 (*cmp_fn)(const void *a, const void *b)) {
+                             u32 (*cmp_fn)(const void *a, const void *b),
+                             void (*free_item)(struct item_T *item)) {
 
   struct item_T **bucket = calloc(1, size * sizeof(struct item_T *));
 
@@ -43,12 +50,12 @@ struct map_T *gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
 /**
  * @brief frees bucket row memory
  *
- * @param item 
+ * @param item
  * @return 0 on succes 1 otherwise.
  */
-static s32 gen_map_free_bucket_row_(struct item_T *item);
+static s32 gen_map_free_bucket_row_(struct map_T *map, struct item_T *item);
 
-static s32 gen_map_free_bucket_row_(struct item_T *item) {
+static s32 gen_map_free_bucket_row_(struct map_T *map, struct item_T *item) {
   assert(item);
 
   if (!item) {
@@ -59,10 +66,7 @@ static s32 gen_map_free_bucket_row_(struct item_T *item) {
   while (item) {
     struct item_T *next = item->next;
 
-    free(item->key);
-    free(item->value);
-    free(item);
-
+    gen_map_free_item_(map, item);
     item = next;
   }
 
@@ -87,7 +91,7 @@ s32 gen_map_free(struct map_T *map) {
   for (u32 i = 0; i < map->size; i++) {
     struct item_T *item = map->bucket[i];
     if (item) {
-      gen_map_free_bucket_row_(item);
+      gen_map_free_bucket_row_(map, item);
     }
   }
 
@@ -97,14 +101,13 @@ s32 gen_map_free(struct map_T *map) {
   return 0;
 };
 
-
-s32 gen_map_get_size(struct map_T *map){
-	assert(map);
-	if (!map){
-	ERROR("can acces the size of a NULL map");
-	return -1;
-	}
-	return map->size;
+s32 gen_map_get_size(struct map_T *map) {
+  assert(map);
+  if (!map) {
+    ERROR("can acces the size of a NULL map");
+    return -1;
+  }
+  return map->size;
 };
 
 s32 gen_map_insert(struct map_T *map, void *key, void *value) {
@@ -165,10 +168,7 @@ s32 gen_map_remove(struct map_T *map, void *key) {
         prev->next = curr->next;
       }
 
-      free(curr->key);
-      free(curr->value);
-      free(curr);
-
+      gen_map_free_item_(map, curr);
       return 0;
     }
 

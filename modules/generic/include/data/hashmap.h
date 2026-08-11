@@ -7,6 +7,12 @@ extern "C" {
 
 #include "types.h"
 
+struct item_T {
+  struct item_T *next;
+  void *key;
+  void *value;
+};
+
 struct map_T;
 
 /**
@@ -16,11 +22,15 @@ struct map_T;
  * @param hash_fn hashing funtion (use gen_map_get_size for getting map mod as
  * it might grow or shrink after initialitzation).
  * @param cmp_fn comparing function. Return value must be 1 on true 0 on false
+ * @param free this function calls when deleting an item of the map if its not
+ * NULL. Make sure to deallocate all memory inside the 'value' of the map item
+ * if you used malloc or similars.
  * @return a pointer to the hashmap or NULL if failed to allocate memory
  */
 extern struct map_T *gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
                                     u32 (*compare_fn)(const void *a,
-                                                      const void *b));
+                                                      const void *b),
+                                    void (*free)(struct item_T *item));
 
 /**
  * @brief deletes the map

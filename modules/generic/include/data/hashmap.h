@@ -13,6 +13,11 @@ struct item_T {
   void *value;
 };
 
+struct map_it_T {
+  struct item_T *current;
+  u32 index;
+};
+
 struct map_T;
 
 /**
@@ -67,6 +72,43 @@ extern s32 gen_map_insert(struct map_T *map, void *key, void *value);
  * @return returns 0 on succes 1 otherwise.
  */
 extern s32 gen_map_remove(struct map_T *map, void *key);
+
+/**
+ * @brief Try find if a value with assosiated key exists
+ *
+ * @param map
+ * @param key
+ * @return NULL if key not in map or value otherwise.
+ */
+extern void *gen_map_find(struct map_T *map, void *key);
+
+/**
+ * @brief check if 'it' is past the last item of the map
+ *
+ * @param map
+ * @param it
+ * @return 1 if true 0 otherwise
+ */
+extern s32 gen_map_it_is_end(struct map_T *map, struct map_it_T *it);
+
+/**
+ * @brief set the iterator to the fist item of the map
+ *
+ * @param map
+ * @param it
+ */
+extern void gen_map_it_set_begin(struct map_T *map, struct map_it_T *it);
+
+/**
+ * @brief Set it.next to the next item of the map
+ *
+ * @param map
+ * @param it
+ *
+ * @result 'it->current' and 'it->index' update to the next item_T. If no
+ * further elements exist, `it->current` will be set to NULL.
+ */
+extern void gen_map_it_get_next(struct map_T *map, struct map_it_T *it);
 
 #ifdef __cplusplus
 }

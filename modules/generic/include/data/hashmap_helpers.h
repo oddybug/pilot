@@ -15,7 +15,7 @@ extern "C" {
  * @param b
  * @return 1 if string equals and 0 otherwise
  */
-extern u32 gen_map_cmp_key_c8p(c8 *a, c8 *b);
+extern u32 gen_map_cmp_key_c8p(const void *a, const void *b);
 
 /**
  * @brief generates a hash from the string using djb2 algorithm
@@ -23,7 +23,7 @@ extern u32 gen_map_cmp_key_c8p(c8 *a, c8 *b);
  * @param key
  * @return
  */
-extern u32 gen_map_hash_fn_c8p(c8 *key);
+extern u32 gen_map_hash_fn_c8p(const void *key);
 
 #ifdef __cplusplus
 }

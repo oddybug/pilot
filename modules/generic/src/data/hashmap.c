@@ -205,8 +205,7 @@ extern void *gen_map_find(struct map_T *map, void *key) {
  * @param map
  * @param it
  * @result 'it->current' and 'it->index' update to the next item_T. If no
- * further elements exist, `it->current` will be set to
- * NULL.
+ * further elements exist, `it->current` will be set to NULL.
  */
 static void gen_map_it_get_next_(struct map_T *map, struct map_it_T *it);
 

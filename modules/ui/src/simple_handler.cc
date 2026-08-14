@@ -48,21 +48,42 @@ CefRefPtr<CefBrowser> SimpleHandler::GetBrowser() const {
   return nullptr;
 }
 
+struct test {
+  const char *msg[10];
+  int id;
+  float test;
+};
+
 bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
   CEF_REQUIRE_UI_THREAD();
 
-  // Handle message from MyHandler::Execute() in the renderer process
-  if (message->GetName() == "greeting") {
-    CefString msg = message->GetArgumentList()->GetString(0);
+  const std::string message_name = message->GetName();
 
-    // Show the message in a JavaScript alert
-    std::stringstream ss;
-    ss << "alert('C++ received: " << msg.ToString() << "');";
-    frame->ExecuteJavaScript(ss.str(), frame->GetURL(), 0);
+  // 1. compare message_name in the hashmap
+  // 2. return to the user
+  // 3. be happy
+  // 4. where are the arguments ;( -> no args have been passed
 
+  if (message_name == "binding_test") {
+    CefRefPtr<CefProcessMessage> response =
+        CefProcessMessage::Create("binding_test");
+    CefRefPtr<CefListValue> response_args = response->GetArgumentList();
+
+    response_args->SetString(0, "Hello from Browser Process C++!");
+    frame->SendProcessMessage(PID_RENDERER, response);
     return true;
+  } else if (message_name == "ipc_dicc_req") {
+
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+
+    CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
+
+    struct test res = *(struct test *)bin->GetRawData();
+
+    INFO("struct test = %s - %d - %f", res.msg, res.id, res.test);
+    INFO("HELLOOOOOO sending dicc");
   }
 
   return false;
@@ -248,7 +269,6 @@ void SimpleHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                             PaintElementType type, const RectList &dirtyRects,
                             const void *buffer, int width, int height) {
 
-  INFO("COPY PIXELS ENABLED");
   text_callback_((u8 *)buffer, width, height);
 }
 

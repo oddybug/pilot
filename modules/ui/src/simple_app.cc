@@ -4,60 +4,16 @@
 
 #include "simple_app.h"
 #include "log.h"
-#include <iostream>
 #include <string>
 
-#include "include/base/cef_logging.h"
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
-#include "include/cef_v8.h"
 #include "include/views/cef_browser_view.h"
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_helpers.h"
 #include "simple_handler.h"
 
 namespace {
-
-// V8 handler to handle JavaScript function calls in the renderer process
-class MyV8Handler : public CefV8Handler {
-public:
-  MyV8Handler() = default;
-
-  bool Execute(const CefString &name, CefRefPtr<CefV8Value> object,
-               const CefV8ValueList &arguments, CefRefPtr<CefV8Value> &retval,
-               CefString &exception) override {
-
-    if (name == "sayHello") {
-      // Get the argument
-
-      if (arguments.size() == 1 && arguments[0]->IsString()) {
-        CefString message = arguments[0]->GetStringValue();
-
-        // Send message to browser process
-        CefRefPtr<CefProcessMessage> msg =
-            CefProcessMessage::Create("greeting");
-        msg->GetArgumentList()->SetString(0, message);
-
-        CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
-        CefRefPtr<CefFrame> frame = context->GetFrame();
-
-        // Results in an asynchronous call to
-        // SimpleHandler::OnProcessMessageReceived in the browser process
-        frame->SendProcessMessage(PID_BROWSER, msg);
-
-        // Return value to JavaScript
-        retval = CefV8Value::CreateString("Message sent to C++!");
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-private:
-  IMPLEMENT_REFCOUNTING(MyV8Handler);
-  DISALLOW_COPY_AND_ASSIGN(MyV8Handler);
-};
 
 // When using the Views framework this object provides the delegate
 // implementation for the CefWindow that hosts the Views-based browser.
@@ -147,7 +103,9 @@ private:
 
 } // namespace
 
-SimpleApp::SimpleApp() = default;
+SimpleApp::SimpleApp() {
+  render_process_handler_ = new MyRenderProcessHandler();
+}
 
 void SimpleApp::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
@@ -170,7 +128,8 @@ void SimpleApp::OnContextInitialized() {
   // that instead of the default URL.
   url = command_line->GetSwitchValue("url");
   if (url.empty()) {
-    url = "https:://www.google.com"; //"file:///" WEBSITE_SOURCE_DIR "index.html";
+    url =
+        "file:///" WEBSITE_SOURCE_DIR "index.html"; //"https:://www.google.com";
     INFO("url = (%s)", url.c_str());
   }
 
@@ -197,23 +156,6 @@ void SimpleApp::OnContextInitialized() {
                                 nullptr, nullptr);
 }
 
-// Called when the JavaScript context is created in the renderer process
-void SimpleApp::OnContextCreated(CefRefPtr<CefBrowser> browser,
-                                 CefRefPtr<CefFrame> frame,
-                                 CefRefPtr<CefV8Context> context) {
-  // Debug assertion - crashes if called on wrong thread
-  // V8 APIs must only be called from the renderer thread
-  CEF_REQUIRE_RENDERER_THREAD();
-
-  // Register JavaScript function 'sayHello' on the global object
-  // (window.sayHello)
-  CefRefPtr<CefV8Value> object = context->GetGlobal();
-  CefRefPtr<CefV8Handler> handler = new MyV8Handler();
-
-  CefRefPtr<CefV8Value> func = CefV8Value::CreateFunction("sayHello", handler);
-  object->SetValue("sayHello", func, V8_PROPERTY_ATTRIBUTE_NONE);
-}
-
 CefRefPtr<CefClient> SimpleApp::GetDefaultClient() {
   // Called when a new browser window is created via Chrome style UI.
   return SimpleHandler::GetInstance();
@@ -226,3 +168,5 @@ void SimpleApp::OnBeforeCommandLineProcessing(
     command_line->AppendSwitchWithValue("use-angle", "gl-egl");
   }
 };
+
+void SimpleApp::SendIpcDicc(CefRefPtr<CefBrowser> browser) { INFO("SQUEREEEE"); };

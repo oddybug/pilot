@@ -257,6 +257,10 @@ extern void iom_poll_events() {
   while (SDL_PollEvent(&event)) {
 
     switch (event.type) {
+
+    case SDL_EVENT_QUIT:
+      g_running = 0;
+      break;
     case SDL_EVENT_WINDOW_RESIZED:
       iom_alert_all_targets_(&event);
       break;

@@ -21,10 +21,6 @@ extern "C" {
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-static s32 g_hud_m_id;
-
-static s32 g_gl_target;
-static s32 g_ui_target;
 
 s32 create_texture(const char *file) {
   int width, height, nr_channels;
@@ -116,15 +112,11 @@ c16 sdl_key_to_c16(SDL_Keycode key, SDL_Keymod mod) {
   }
 }
 
-void sdl_gl_callback(SDL_Event *e) { INFO("GL CALLBACK"); }
+void sdl_gl_callback(SDL_Event *e) {}
 
 void sdl_ui_callback(SDL_Event *e) {
-  INFO("UI CALLBACK");
 
   switch (e->type) {
-  case SDL_EVENT_QUIT:
-    state = 0;
-    break;
   case SDL_EVENT_KEY_DOWN: {
     char16_t ch = sdl_key_to_c16(e->key.key, SDL_GetModState());
     ui_send_mouse_keydown(ch);
@@ -202,8 +194,6 @@ void start_camera() {
 }
 
 void ui_texture_clbk(u8 *bitmap, u32 width, u32 height) {
-  INFO("callbacking");
-
   // TODO: think a clever way to do that. Temporal.
   // struct material_T mat = ren_get_material(g_hud_m_id);
 
@@ -212,7 +202,6 @@ void ui_texture_clbk(u8 *bitmap, u32 width, u32 height) {
                                                           // oberflow
                                                           // bug
   ren_update_ui_background(b, bitmap);
-  // ren_update_texture(mat.texture, bitmap, width, height);
 }
 
 void create_targets() {

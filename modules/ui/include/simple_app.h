@@ -8,38 +8,36 @@
 #include "include/cef_app.h"
 #include "include/cef_render_process_handler.h"
 
+#include "render_handler.h"
+
 // Implement application-level callbacks for the browser process.
-class SimpleApp : public CefApp,
-                  public CefBrowserProcessHandler,
-                  public CefRenderProcessHandler {
+class SimpleApp : public CefApp, public CefBrowserProcessHandler {
 public:
   SimpleApp();
-
   // CefApp methods:
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
     return this;
   }
 
   CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override {
-    return this;
+    return render_process_handler_;
   }
 
   // CefBrowserProcessHandler methods:
   void OnContextInitialized() override;
 
-  // v8 initialitzation call. Called when the JavaScript context is created in
-  // the renderer process
-  void OnContextCreated(CefRefPtr<CefBrowser> browser,
-                        CefRefPtr<CefFrame> frame,
-                        CefRefPtr<CefV8Context> context) override;
-
   CefRefPtr<CefClient> GetDefaultClient() override;
 
-  virtual void
-  OnBeforeCommandLineProcessing(const CefString& process_type,
-                                CefRefPtr<CefCommandLine> command_line) override;
+  virtual void OnBeforeCommandLineProcessing(
+      const CefString &process_type,
+      CefRefPtr<CefCommandLine> command_line) override;
 
 private:
+
+  void SendIpcDicc(CefRefPtr<CefBrowser> browser);
+
+  CefRefPtr<MyRenderProcessHandler> render_process_handler_;
+
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(SimpleApp);
 };

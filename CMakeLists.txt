@@ -76,11 +76,9 @@ endif()
 # the current directory. TODO: Change these lines to match your project target
 # when you copy this file.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
-  add_subdirectory(tests/cefsimple)
-  add_subdirectory(tests/cefsimple_capi)
-  add_subdirectory(tests/gmock)
-  add_subdirectory(tests/gtest)
-  add_subdirectory(tests/ceftests)
+  # add_subdirectory(tests/cefsimple) add_subdirectory(tests/cefsimple_capi)
+  # add_subdirectory(tests/gmock) add_subdirectory(tests/gtest)
+  # add_subdirectory(tests/ceftests)
 endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cefclient")
@@ -126,5 +124,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/modules/iom")
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/render")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/ui")
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
 
 include(cmake/directories.cmake)

@@ -1,6 +1,5 @@
-#include "types.h"
 #include "dmath.h"
-
+#include "types.h"
 
 enum MOUSE_BTN {
   MBTN_LEFT = 0,
@@ -15,7 +14,6 @@ extern s32 ui_get_texture_id();
 extern void ui_message_loop();
 
 extern void ui_send_mouse_keydown(c16 key);
-
 
 extern void ui_send_mouse_keyup(c16 key);
 

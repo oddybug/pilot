@@ -16,8 +16,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # cefsimple sources.
 
-set(CEFSIMPLE_SRCS src/simple_app.cc src/ui.cc include/simple_app.h
-                   src/simple_handler.cc include/simple_handler.h)
+set(CEFSIMPLE_SRCS
+    src/simple_app.cc
+    src/ui.cc
+    include/simple_app.h
+    src/simple_handler.cc
+    include/simple_handler.h
+    include/render_handler.h
+    src/render_handler.cc
+    src/ui_ipc.c)
+
 set(CEFSIMPLE_SRCS_LINUX src/simple_handler_linux.cc)
 set(CEFSIMPLE_SRCS_MAC src/cefsimple_mac.mm src/simple_handler_mac.mm)
 set(CEFSIMPLE_SRCS_WINDOWS src/cefsimple_win.cc include/resource.h
@@ -135,8 +143,8 @@ if(OS_LINUX)
   # endif()
 
   # Set SUID permissions on the chrome-sandbox target.
-  #set_linux_suid_permissions("${CEF_TARGET}"
-  #                           "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
+  # set_linux_suid_permissions("${CEF_TARGET}"
+  # "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
 endif()
 
 #

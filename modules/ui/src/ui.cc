@@ -6,6 +6,7 @@
 
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
+#include "include/cef_task.h"
 #include "include/internal/cef_ptr.h"
 #include "include/internal/cef_types.h"
 #include "include/internal/cef_types_wrappers.h"
@@ -57,7 +58,7 @@ s32 ui_start(int argc, char *argv[]) {
   // fails or if early exit is desired (for example, due to process singleton
   // relaunch behavior).
   if (!CefInitialize(main_args, settings, app.get(), nullptr)) {
-    return -1; // TODO: CefGetExitCode();
+    return CefGetExitCode();
   }
 
   return 0;

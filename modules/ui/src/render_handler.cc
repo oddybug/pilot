@@ -1,5 +1,8 @@
 #include "render_handler.h"
+#include "data/hashmap.h"
+#include "data/hashmap_helpers.h"
 #include "log.h"
+#include "ui_ipc.h"
 
 class MyRenderProcessHandler;
 
@@ -20,7 +23,7 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
   // CEF API
 
   if (name == "setMessageCallback") {
-  // variadic n of elements
+    // variadic n of elements
     if (arguments.size() == 2 && arguments[0]->IsString() &&
         arguments[1]->IsFunction()) {
       std::string message_name = arguments[0]->GetStringValue();
@@ -54,6 +57,8 @@ struct test {
   float test;
 };
 
+MyRenderProcessHandler::MyRenderProcessHandler() { init_e_map(); }
+
 void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
                                               CefRefPtr<CefFrame> frame,
                                               CefRefPtr<CefV8Context> context) {
@@ -81,15 +86,14 @@ void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
 
   CefRefPtr<CefProcessMessage> ipc_dicc_req =
       CefProcessMessage::Create("ipc_dicc_req");
-
-  struct test a = {.msg = "123456789\0", .id = 2, .test = 2.2};
-  CefRefPtr<CefListValue> response_args = ipc_dicc_req->GetArgumentList();
-
-  CefRefPtr<CefBinaryValue> msg =
-      CefBinaryValue::Create(&a, sizeof(struct test));
-  response_args->SetBinary(sizeof(struct test), msg);
-
   frame->SendProcessMessage(PID_BROWSER, ipc_dicc_req);
+
+  // struct test a = {.msg = "123456789\0", .id = 2, .test = 2.2};
+  // CefRefPtr<CefListValue> response_args = ipc_dicc_req->GetArgumentList();
+
+  // CefRefPtr<CefBinaryValue> msg =
+  //     CefBinaryValue::Create(&a, sizeof(struct test));
+  // response_args->SetBinary(sizeof(struct test), msg);
 }
 
 void SetList(CefRefPtr<CefListValue> source, CefRefPtr<CefV8Value> target) {
@@ -125,6 +129,16 @@ void SetList(CefRefPtr<CefListValue> source, CefRefPtr<CefV8Value> target) {
 bool MyRenderProcessHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
+
+  const std::string message_name = message->GetName();
+
+  if (message_name == "ipc_dicc_stream") {
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
+    const void *data = bin->GetRawData();
+
+  } else {
+  };
 
   bool handled = false;
 
@@ -190,3 +204,22 @@ void MyRenderProcessHandler::OnContextReleased(
     }
   }
 }
+
+static void pilot_entry_free_entry_c_(struct entry_c_T *e);
+
+static void pilot_entry_free_entry_c_(struct entry_c_T *e) {
+  free(e->e.in_args.args);
+  free(e->e.out_args.args);
+};
+
+static void pilot_entry_free_item_fn_(struct item_T *item);
+
+static void pilot_entry_free_item_fn_(struct item_T *item) {
+  struct entry_c_T *value = (entry_c_T *)item->value;
+  pilot_entry_free_entry_c_(value);
+};
+
+void MyRenderProcessHandler::init_e_map() {
+  gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
+                 pilot_entry_free_item_fn_);
+};

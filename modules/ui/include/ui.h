@@ -31,3 +31,5 @@ extern void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
 extern void ui_resize_window(u32 width, u32 height);
 
 void ui_close_browsers();
+
+extern struct map_T *ui_ipc_get_browser_map();

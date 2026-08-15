@@ -1,6 +1,7 @@
 #ifndef RENDER_HANDLER_H
 #define RENDER_HANDLER_H
 
+#include "data/hashmap.h"
 #include "include/cef_app.h"
 #include "include/cef_v8.h"
 #include <map>
@@ -32,7 +33,7 @@ public:
       CallbackValue;
   typedef std::map<CallbackKey, CallbackValue> CallbackMap;
 
-  MyRenderProcessHandler() = default;
+  MyRenderProcessHandler();
 
   void OnContextCreated(CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefFrame> frame,
@@ -48,6 +49,9 @@ public:
                                 CefRefPtr<CefProcessMessage> message) override;
 
 private:
+  void init_e_map();
+  struct map_T *e_map_;
+
   CallbackMap callback_map_;
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);
 };

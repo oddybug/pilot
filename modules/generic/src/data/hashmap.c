@@ -109,7 +109,7 @@ s32 gen_map_get_size(struct map_T *map) {
   return map->b_num;
 };
 
-s32 gen_map_insert(struct map_T *map, void *key, void *value) {
+s32 gen_map_insert(struct map_T *map, const void *key, void *value) {
   assert(key && map);
   if (!map || !key) {
     ERROR("map or key NULL.");
@@ -144,7 +144,7 @@ s32 gen_map_insert(struct map_T *map, void *key, void *value) {
   return 0;
 }
 
-s32 gen_map_remove(struct map_T *map, void *key) {
+s32 gen_map_remove(struct map_T *map, const void *key) {
   assert(map && key);
 
   if (!map || !key) {
@@ -177,7 +177,7 @@ s32 gen_map_remove(struct map_T *map, void *key) {
   return 1;
 }
 
-extern void *gen_map_find(struct map_T *map, void *key) {
+extern void *gen_map_find(struct map_T *map, const void *key) {
   assert(map && key);
 
   u32 hash = map->hash_fn(key);
@@ -210,17 +210,13 @@ extern void *gen_map_find(struct map_T *map, void *key) {
 static void gen_map_it_get_next_(struct map_T *map, struct map_it_T *it);
 
 static void gen_map_it_get_next_(struct map_T *map, struct map_it_T *it) {
-  assert(map && it && it->current);
-  if (!it->current) {
-    ERROR("Wrong usage of iterator. Check implementation.");
-    return;
-  }
+  assert(map && it);
 
   if (it->index >= map->b_num - 1) {
     ERROR("Map iterator exceeded map size.");
     return;
   }
-  if (it->current->next) {
+  if (it->current && it->current->next) {
     it->current = it->current->next;
     return;
   }

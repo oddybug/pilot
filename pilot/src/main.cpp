@@ -2,6 +2,7 @@
 #include "SDL3/SDL_mouse.h"
 
 #include "ui.h"
+#include "ui_ipc.h"
 
 extern "C" {
 #include "camera.h"
@@ -20,7 +21,6 @@ extern "C" {
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
 
 s32 create_texture(const char *file) {
   int width, height, nr_channels;
@@ -110,6 +110,25 @@ c16 sdl_key_to_c16(SDL_Keycode key, SDL_Keymod mod) {
   default:
     return 0;
   }
+}
+
+void ipc_test_fnc(void *data) { INFO("BONJOUR"); };
+
+void set_ipc_calls() {
+  struct map_T *e_map = ui_ipc_get_browser_map();
+  enum ARG_TYPE i[2] = {S32, U32};
+  struct args_T args_i = (struct args_T){.args = i, .n_args = 2};
+  enum ARG_TYPE o[2] = {U32, U32};
+  struct args_T args_o = (struct args_T){.args = i, .n_args = 2};
+
+  pilot_ipc_entry_c_create(e_map, "test_call", ipc_test_fnc, &args_i, &args_o);
+
+  pilot_ipc_entry_c_create(e_map, "another_call", ipc_test_fnc, &args_i,
+                           &args_o);
+
+  pilot_ipc_entry_c_create(e_map, "another_call", ipc_test_fnc, &args_i,
+                           &args_o);
+  INFO("SUCCESFULL ENTRY ADDED");
 }
 
 void sdl_gl_callback(SDL_Event *e) {}
@@ -262,6 +281,8 @@ int main(int argc, char *argv[]) {
   ren_entity_add_component(e1, COMPONENT_MATERIAL, m_id);
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
   ren_entity_add_component(e1, COMPONENT_PROGRAM, p_id);
+
+  set_ipc_calls();
 
   while (!iom_can_close()) {
     iom_poll_events();

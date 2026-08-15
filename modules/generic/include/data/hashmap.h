@@ -62,7 +62,7 @@ extern s32 gen_map_get_size(struct map_T *map);
  * @param value
  * @return 0 on succes 1 otherwise.
  */
-extern s32 gen_map_insert(struct map_T *map, void *key, void *value);
+extern s32 gen_map_insert(struct map_T *map, const void *key, void *value);
 
 /**
  * @brief deletes item with key 'key' from the map.
@@ -71,7 +71,7 @@ extern s32 gen_map_insert(struct map_T *map, void *key, void *value);
  * @param key
  * @return returns 0 on succes 1 otherwise.
  */
-extern s32 gen_map_remove(struct map_T *map, void *key);
+extern s32 gen_map_remove(struct map_T *map, const void *key);
 
 /**
  * @brief Try find if a value with assosiated key exists
@@ -80,7 +80,7 @@ extern s32 gen_map_remove(struct map_T *map, void *key);
  * @param key
  * @return NULL if key not in map or value otherwise.
  */
-extern void *gen_map_find(struct map_T *map, void *key);
+extern void *gen_map_find(struct map_T *map, const void *key);
 
 /**
  * @brief check if 'it' is past the last item of the map

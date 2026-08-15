@@ -160,3 +160,10 @@ void ui_resize_window(u32 width, u32 height) {
 };
 
 void ui_close() { CefShutdown(); };
+
+extern struct map_T *ui_ipc_get_browser_map() {
+
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  return handler->GetEntriesMap();
+
+};

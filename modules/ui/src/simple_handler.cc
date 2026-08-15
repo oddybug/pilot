@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 
+#include "data/hashmap_helpers.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
 #include "include/cef_parser.h"
@@ -15,6 +16,7 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 #include "log.h"
+#include "ui_ipc.h"
 
 namespace {
 
@@ -33,6 +35,7 @@ SimpleHandler::SimpleHandler(bool is_alloy_style)
     : is_alloy_style_(is_alloy_style) {
   DCHECK(!g_instance);
   g_instance = this;
+  init_e_map();
 }
 
 SimpleHandler::~SimpleHandler() { g_instance = nullptr; }
@@ -75,15 +78,29 @@ bool SimpleHandler::OnProcessMessageReceived(
     frame->SendProcessMessage(PID_RENDERER, response);
     return true;
   } else if (message_name == "ipc_dicc_req") {
+    CefRefPtr<CefProcessMessage> response =
+        CefProcessMessage::Create("ipc_dicc_stream");
+    void *args_bs = pilot_ipc_get_args_bs(e_map_);
 
-    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    CefRefPtr<CefListValue> response_args = response->GetArgumentList();
 
-    CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
+    u32 size_n; //(dummi var)
+    u32 size = pilot_ipc_dicc_get_size(e_map_, &size_n);
+    CefRefPtr<CefBinaryValue> msg = CefBinaryValue::Create(args_bs, size);
 
-    struct test res = *(struct test *)bin->GetRawData();
+    response_args->SetBinary(sizeof(struct test), msg);
 
-    INFO("struct test = %s - %d - %f", res.msg, res.id, res.test);
-    INFO("HELLOOOOOO sending dicc");
+    frame->SendProcessMessage(PID_BROWSER, response);
+
+    // CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
+    // CefRefPtr<CefListValue> args = message->GetArgumentList();
+
+    // CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
+
+    // struct test res = *(struct test *)bin->GetRawData();
+
+    // INFO("struct test = %s - %d - %f", res.msg, res.id, res.test);
+    // INFO("HELLOOOOOO sending dicc");
   }
 
   return false;
@@ -262,6 +279,28 @@ void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
       browser->GetHost()->WasResized();
     }
   }
+};
+
+struct map_T *SimpleHandler::GetEntriesMap() { return e_map_; };
+
+static void pilot_entry_free_entry_(struct entry_T *e);
+
+static void pilot_entry_free_entry_(struct entry_T *e) {
+  free(e->in_args.args);
+  free(e->out_args.args);
+};
+
+static void pilot_entry_free_item_fn_(struct item_T *item);
+
+static void pilot_entry_free_item_fn_(struct item_T *item) {
+  struct entry_T *value = (entry_T *)item->value;
+  pilot_entry_free_entry_(value);
+};
+
+void SimpleHandler::init_e_map() {
+
+  e_map_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
+                          pilot_entry_free_item_fn_);
 };
 
 // TODO: to implement

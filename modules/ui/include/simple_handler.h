@@ -12,6 +12,8 @@
 
 #include "types.h"
 
+#include "data/hashmap.h"
+
 class SimpleHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
@@ -64,7 +66,11 @@ public:
 
   void ResizeBrowsers(u32 width, u32 height);
 
+  struct map_T *GetEntriesMap();
+
 private:
+  void init_e_map();
+  struct map_T *e_map_;
   bool is_closed_ = false;
 
   u32 window_w = 0;

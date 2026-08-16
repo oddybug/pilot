@@ -46,6 +46,8 @@ extern void pilot_ipc_free_dicc();
 // after doing it know nothing
 extern u32 pilot_ipc_dicc_get_size(struct map_T *map, u32 *n_entries);
 
+extern void temp_print_buffer(void *stream, const u32 size);
+
 extern void *pilot_ipc_get_args_bs(struct map_T *map);
 
 extern void pilot_ipc_stream_insert(struct map_T *map, void *stream);

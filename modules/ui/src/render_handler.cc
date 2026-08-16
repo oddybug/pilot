@@ -131,11 +131,14 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
 
   const std::string message_name = message->GetName();
+  INFO("Renderer message name: %s", message_name.c_str());
 
   if (message_name == "ipc_dicc_stream") {
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
-    const void *data = bin->GetRawData();
+    void *data = (void *)bin->GetRawData();
+    //temp_print_buffer(data, (u32)bin->GetSize());
+    pilot_ipc_stream_insert(e_map_, data);
 
   } else {
   };
@@ -220,6 +223,6 @@ static void pilot_entry_free_item_fn_(struct item_T *item) {
 };
 
 void MyRenderProcessHandler::init_e_map() {
-  gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
+  e_map_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
                  pilot_entry_free_item_fn_);
 };

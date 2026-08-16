@@ -11,6 +11,7 @@
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
 #include "include/cef_parser.h"
+#include "include/internal/cef_types.h"
 #include "include/views/cef_browser_view.h"
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -88,9 +89,9 @@ bool SimpleHandler::OnProcessMessageReceived(
     u32 size = pilot_ipc_dicc_get_size(e_map_, &size_n);
     CefRefPtr<CefBinaryValue> msg = CefBinaryValue::Create(args_bs, size);
 
-    response_args->SetBinary(sizeof(struct test), msg);
+    response_args->SetBinary(0, msg);
 
-    frame->SendProcessMessage(PID_BROWSER, response);
+    frame->SendProcessMessage(PID_RENDERER, response);
 
     // CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
     // CefRefPtr<CefListValue> args = message->GetArgumentList();

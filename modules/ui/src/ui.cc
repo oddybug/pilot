@@ -14,6 +14,7 @@
 #include "log.h"
 #include "simple_app.h"
 #include "simple_handler.h"
+#include "ui_ipc.h"
 #include <cstdlib>
 
 s32 ui_start(int argc, char *argv[]) {
@@ -159,11 +160,13 @@ void ui_resize_window(u32 width, u32 height) {
   handler->ResizeBrowsers(width, height);
 };
 
-void ui_close() { CefShutdown(); };
-
-extern struct map_T *ui_ipc_get_browser_map() {
+struct map_T *ui_ipc_get_browser_map() {
 
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   return handler->GetEntriesMap();
+};
 
+void ui_close() {
+  ui_ipc_free();
+  CefShutdown();
 };

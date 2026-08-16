@@ -87,13 +87,6 @@ void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   CefRefPtr<CefProcessMessage> ipc_dicc_req =
       CefProcessMessage::Create("ipc_dicc_req");
   frame->SendProcessMessage(PID_BROWSER, ipc_dicc_req);
-
-  // struct test a = {.msg = "123456789\0", .id = 2, .test = 2.2};
-  // CefRefPtr<CefListValue> response_args = ipc_dicc_req->GetArgumentList();
-
-  // CefRefPtr<CefBinaryValue> msg =
-  //     CefBinaryValue::Create(&a, sizeof(struct test));
-  // response_args->SetBinary(sizeof(struct test), msg);
 }
 
 void SetList(CefRefPtr<CefListValue> source, CefRefPtr<CefV8Value> target) {
@@ -137,10 +130,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
     void *data = (void *)bin->GetRawData();
-    //temp_print_buffer(data, (u32)bin->GetSize());
-    pilot_ipc_stream_insert(e_map_, data);
-
-  } else {
+    ui_ipc_stream_insert(e_map_, data);
   };
 
   bool handled = false;
@@ -224,5 +214,5 @@ static void pilot_entry_free_item_fn_(struct item_T *item) {
 
 void MyRenderProcessHandler::init_e_map() {
   e_map_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
-                 pilot_entry_free_item_fn_);
+                          pilot_entry_free_item_fn_);
 };

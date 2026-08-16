@@ -9,17 +9,13 @@
 #include <string.h>
 
 #include "data/hashmap.h"
-#include "data/hashmap_helpers.h"
 #include "log.h"
 
-// Remind you this is on browser process only
-
-extern s32 pilot_ipc_entry_c_create(struct map_T *map, const c8 *name,
-                                    void (*callback)(void *data),
-                                    struct args_T *in_args,
-                                    struct args_T *out_args) {
+s32 ui_ipc_entry_add(const c8 *name, void (*callback)(void *data),
+                     struct args_T *in_args, struct args_T *out_args) {
   assert(in_args && out_args && callback && name);
 
+  struct map_T *map = ui_ipc_get_browser_map();
   if (gen_map_find(map, name)) {
     WARN("entry already exists");
     return 2;
@@ -58,9 +54,22 @@ err_e:
   return 1;
 };
 
-static u32 pilot_ipc_type_size(enum ARG_TYPE type);
+extern void ui_ipc_free() {
+  struct map_T *map = ui_ipc_get_browser_map();
+  if (!map)
+    return;
+  gen_map_free(map);
+};
 
-static u32 pilot_ipc_type_size(enum ARG_TYPE type) {
+/**
+ * @brief Get the size in bytes of an arg
+ *
+ * @param type
+ * @return
+ */
+static size_t ui_ipc_arg_size_(enum ARG_TYPE type);
+
+static size_t ui_ipc_arg_size_(enum ARG_TYPE type) {
   u32 res;
   switch (type) {
   case U32:
@@ -73,18 +82,25 @@ static u32 pilot_ipc_type_size(enum ARG_TYPE type) {
   return res;
 };
 
-static u32 pilot_ipc_args_get_size_(struct args_T *args);
+/**
+ * @brief Get the size in bytes of the args vector in an astgs_T struct
+ *
+ * @param args
+ * @return
+ */
+static size_t ui_ipc_argsv_get_(struct args_T *args);
 
-static u32 pilot_ipc_args_get_size_(struct args_T *args) {
+static size_t ui_ipc_argsv_get_(struct args_T *args) {
   u32 res = 0;
   u32 i;
   for (i = 0; i < args->n_args; i++) {
-    res += pilot_ipc_type_size(args->args[i]);
+    res += ui_ipc_arg_size_(args->args[i]);
   }
   return res;
 };
 
-extern u32 pilot_ipc_dicc_get_size(struct map_T *map, u32 *n_entries) {
+extern u32 ui_ipc_stream_get_size(u32 *n_entries) {
+  struct map_T *map = ui_ipc_get_browser_map();
 
   u32 res = 0;
   res += sizeof(u32); // TOTAL NUMBER OF ENTRIES
@@ -100,7 +116,6 @@ extern u32 pilot_ipc_dicc_get_size(struct map_T *map, u32 *n_entries) {
     res += (strlen((c8 *)it.current->key) + 1) *
            sizeof(c8); // plus the size of the name +
                        // null terminator
-
     *n_entries += 1;
     gen_map_it_get_next(map, &it);
   };
@@ -146,27 +161,18 @@ extern void temp_print_buffer(void *stream, const u32 size) {
   printf("\n");
 }
 
-static void *pilot_ipc_create_arg_buffer_(struct map_T *map);
-
-static void *pilot_ipc_create_arg_buffer_(struct map_T *map) {
-
+extern void *ui_ipc_stream_get() {
+  struct map_T *map = ui_ipc_get_browser_map();
   u32 n_entries;
-  u32 size = pilot_ipc_dicc_get_size(map, &n_entries);
-
-  if (!size) {
-    WARN("No args in dicc.");
-    return NULL;
-  }
+  u32 size = ui_ipc_stream_get_size(&n_entries);
+  if (!size)
+    goto err;
 
   c8 *res = malloc(size);
-
-  if (!res) {
-    ERROR("Could not allocate memory. Errno: %d", errno);
-    return NULL;
-  }
+  if (!res)
+    goto err;
 
   void *res_p = res;
-  // total entries
   res_p = mempcpy(res_p, &n_entries, sizeof(u32));
 
   struct map_it_T it;
@@ -174,17 +180,12 @@ static void *pilot_ipc_create_arg_buffer_(struct map_T *map) {
   while (it.current) {
     struct entry_c_T *entry = it.current->value;
     // ipc name
-
     res_p = stpcpy(res_p, (c8 *)it.current->key);
     res_p += sizeof(c8);
-
     // ipc params in args types
-    INFO("N IN ARGS BEFORE COPY: %d", entry->e.in_args.n_args);
     res_p = mempcpy(res_p, &entry->e.in_args.n_args, sizeof(u32));
     res_p = mempcpy(res_p, entry->e.in_args.args,
                     sizeof(enum ARG_TYPE) * entry->e.in_args.n_args);
-
-    INFO("N OUT ARGS BEFORE COPY: %d", entry->e.out_args.n_args);
     // ipc params out args types
     res_p = mempcpy(res_p, &entry->e.out_args.n_args, sizeof(u32));
     res_p = mempcpy(res_p, entry->e.out_args.args,
@@ -193,36 +194,27 @@ static void *pilot_ipc_create_arg_buffer_(struct map_T *map) {
     gen_map_it_get_next(map, &it);
   };
 
-  temp_print_buffer(res, size);
-
   return res;
+
+err:
+  ERROR("Could not create the bitstream");
+  return NULL;
 };
 
-static void *pilot_ipc_send_dicc_(struct map_T *map);
+/**
+ * @brief Gets the next entry of the stream. It moves the stream pointer to the
+ * next entry before return.
+ *
+ * @param stream reference to the void pointer
+ */
+static struct entry_T *ui_ipc_stream_next_entry_(void **stream);
 
-static void *pilot_ipc_send_dicc_(struct map_T *map) {
-  // size to allocate. it only takes the lenght of the args
-  void *binary_stream = pilot_ipc_create_arg_buffer_(map);
-  return binary_stream;
-
-  // handler make call to render process :)
-};
-
-extern void *pilot_ipc_get_args_bs(struct map_T *map) {
-  return pilot_ipc_send_dicc_(map);
-};
-
-static struct entry_T *pilot_ipc_stream_to_entry_(void **stream);
-
-static struct entry_T *pilot_ipc_stream_to_entry_(void **stream) {
-
+static struct entry_T *ui_ipc_stream_next_entry_(void **stream) {
   void *s_cpy = *stream;
 
   u32 in_args_n;
   memcpy(&in_args_n, s_cpy, sizeof(u32));
   s_cpy += sizeof(u32);
-
-  INFO("args %d", in_args_n);
 
   enum ARG_TYPE *in_args = malloc(sizeof(enum ARG_TYPE) * in_args_n);
   if (!in_args)
@@ -233,8 +225,6 @@ static struct entry_T *pilot_ipc_stream_to_entry_(void **stream) {
   u32 out_args_n;
   memcpy(&out_args_n, s_cpy, sizeof(u32));
   s_cpy += sizeof(u32);
-
-  INFO("args out %d", out_args_n);
 
   enum ARG_TYPE *out_args = malloc(sizeof(enum ARG_TYPE) * out_args_n);
   if (!out_args)
@@ -248,7 +238,6 @@ static struct entry_T *pilot_ipc_stream_to_entry_(void **stream) {
 
   entry->in_args.n_args = in_args_n;
   entry->in_args.args = in_args;
-
   entry->out_args.n_args = out_args_n;
   entry->out_args.args = out_args;
 
@@ -264,8 +253,7 @@ in_err:
   return NULL;
 }
 
-extern void pilot_ipc_stream_insert(struct map_T *map, void *stream) {
-
+void ui_ipc_stream_insert(struct map_T *map, void *stream) {
   void *s_cpy = stream;
   u32 n_entries;
 
@@ -273,8 +261,6 @@ extern void pilot_ipc_stream_insert(struct map_T *map, void *stream) {
   s_cpy += sizeof(u32);
 
   u32 i;
-  INFO("n_entries: %d", n_entries);
-
   for (i = 0; i < n_entries; i++) {
 
     c8 *e_name = malloc(sizeof(c8) * (strlen((c8 *)s_cpy) + 1));
@@ -283,13 +269,10 @@ extern void pilot_ipc_stream_insert(struct map_T *map, void *stream) {
       return;
     }
 
-    INFO("entry name: %s", s_cpy);
-
     strcpy(e_name, (c8 *)s_cpy);
     s_cpy += strlen(e_name) + sizeof(c8);
 
-    INFO("entry name: %s", e_name);
-    struct entry_T *e = pilot_ipc_stream_to_entry_(&s_cpy);
+    struct entry_T *e = ui_ipc_stream_next_entry_(&s_cpy);
     gen_map_insert(map, e_name, e);
   }
 };

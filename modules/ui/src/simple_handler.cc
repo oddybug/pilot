@@ -81,12 +81,12 @@ bool SimpleHandler::OnProcessMessageReceived(
   } else if (message_name == "ipc_dicc_req") {
     CefRefPtr<CefProcessMessage> response =
         CefProcessMessage::Create("ipc_dicc_stream");
-    void *args_bs = pilot_ipc_get_args_bs(e_map_);
+    void *args_bs = ui_ipc_stream_get();
 
     CefRefPtr<CefListValue> response_args = response->GetArgumentList();
 
     u32 size_n; //(dummi var)
-    u32 size = pilot_ipc_dicc_get_size(e_map_, &size_n);
+    u32 size = ui_ipc_stream_get_size(&size_n);
     CefRefPtr<CefBinaryValue> msg = CefBinaryValue::Create(args_bs, size);
 
     response_args->SetBinary(0, msg);

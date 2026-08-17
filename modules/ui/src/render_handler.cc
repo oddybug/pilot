@@ -1,8 +1,10 @@
 #include "render_handler.h"
 #include "data/hashmap.h"
 #include "data/hashmap_helpers.h"
+#include "include/internal/cef_ptr.h"
 #include "log.h"
 #include "ui_ipc.h"
+#include <cstring>
 
 class MyRenderProcessHandler;
 
@@ -23,6 +25,7 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
   // CEF API
 
   if (name == "setMessageCallback") {
+
     // variadic n of elements
     if (arguments.size() == 2 && arguments[0]->IsString() &&
         arguments[1]->IsFunction()) {
@@ -216,3 +219,110 @@ void MyRenderProcessHandler::init_e_map() {
   e_map_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
                           pilot_entry_free_item_fn_);
 };
+
+// TODO: A LOT OF MORE CHECKING IS NEEDED
+bool MyRenderProcessHandler::CheckType(ARG_TYPE c_type, CefValueType js_type) {
+
+  switch (js_type) {
+  case VTYPE_INVALID:
+    return false;
+    break;
+  case VTYPE_NULL:
+    return false;
+    break;
+  case VTYPE_BOOL:
+    return false;
+    break;
+  case VTYPE_INT:
+    // more checking
+    return c_type == S32 ? true : false;
+    break;
+  case VTYPE_DOUBLE:
+    return false;
+    break;
+  case VTYPE_STRING:
+    return false;
+    break;
+  case VTYPE_BINARY:
+    return false;
+    break;
+  case VTYPE_DICTIONARY:
+    return false;
+    break;
+  case VTYPE_LIST:
+    return false;
+    break;
+
+  case VTYPE_NUM_VALUES:
+    return false;
+    break;
+  default:
+    return false;
+    break;
+  }
+  return true;
+};
+CefRefPtr<CefProcessMessage>
+MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
+                                      CefRefPtr<CefListValue> args) {
+
+  struct args_T in = e->in_args;
+
+  CefRefPtr<CefListValue> args_cpy = args->Copy();
+  args_cpy->Remove(0);
+  if (e->out_args.n_args > 0)
+    args_cpy->Remove(0);
+
+  if (in.n_args > args->GetSize()) {
+    ERROR("Not enough args provided in '%s'", name);
+    return nullptr;
+  }
+
+  bool valid = true;
+  int i = 0;
+  while (valid and i < in.n_args) {
+    valid = CheckType(in.args[i], args->GetValue(i)->GetType());
+    i++;
+  }
+  if (!valid) {
+    // TODO: Could provide more info. Could not read type X expected Y
+    ERROR("Wrong arg types provided in call '%s'", name);
+    return nullptr;
+  }
+
+  size_t name_len = strlen(name) + sizeof(c8);
+  size_t bs_size = name_len + ui_ipc_argsv_get(&e->in_args);
+
+  void *bs = malloc(bs_size);
+
+  if (!bs) {
+    ERROR("failed to allocate memory");
+    return nullptr;
+  }
+
+  CreateMessageBs(bs, name, &in, args_cpy);
+
+  CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("entry");
+  CefRefPtr<CefListValue> args_msg = msg->GetArgumentList();
+  CefRefPtr<CefBinaryValue> msg_bs = CefBinaryValue::Create(bs, bs_size);
+
+  free(bs);
+  return nullptr;
+}
+
+void MyRenderProcessHandler::CreateMessageBs(void *stream, const c8 *name,
+                                             struct args_T *in,
+                                             CefRefPtr<CefListValue> args) {
+  size_t name_len = strlen(name) + sizeof(c8);
+
+  uint8_t *s_cpy = static_cast<u8 *>(stream);
+  strcpy(reinterpret_cast<c8 *>(s_cpy), name);
+  s_cpy += name_len;
+
+  for (int i = 0; i < in->n_args; i++) {
+    CefRefPtr<CefValue> value = args->GetValue(i);
+    void *bin = (void *)value->GetBinary()->GetRawData();
+
+    ui_ipc_stream_copy_arg(reinterpret_cast<void **>(&s_cpy), bin, in->args[i]);
+  }
+}

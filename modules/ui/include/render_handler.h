@@ -4,6 +4,8 @@
 #include "data/hashmap.h"
 #include "include/cef_app.h"
 #include "include/cef_v8.h"
+#include "include/cef_values.h"
+#include "ui_ipc.h"
 #include <map>
 #include <string>
 #include <utility>
@@ -51,6 +53,13 @@ public:
 private:
   void init_e_map();
   struct map_T *e_map_;
+
+  bool CheckType(ARG_TYPE c_type, CefValueType js_type);
+
+  CefRefPtr<CefProcessMessage> CreateMessage(const c8 *name, struct entry_T *e,
+                                             CefRefPtr<CefListValue> args);
+
+  void CreateMessageBs(void* stream, const c8* name, struct args_T *in, CefRefPtr<CefListValue> args);
 
   CallbackMap callback_map_;
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);

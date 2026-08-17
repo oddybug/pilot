@@ -41,6 +41,15 @@ extern void ui_ipc_entry_rm(struct entry_T e);
 extern void ui_ipc_free();
 
 /**
+ * @brief INTERNAL CALL! Get the size in bytes of the args vector in an astgs_T
+ * struct
+ *
+ * @param args
+ * @return
+ */
+extern size_t ui_ipc_argsv_get(struct args_T *args);
+
+/**
  * @brief INTERNAL CALL! Gets the size in bytes of the total space needed for
  * allocate the bitstream of the map of entries to send it to the render process
  * (CEF).
@@ -80,6 +89,16 @@ extern struct map_T *ui_ipc_get_browser_map();
  */
 extern void ui_ipc_stream_insert(struct map_T *map, void *stream);
 
+/**
+ * @brief copy value of type ARG_TYPE into stream and moves the pointer of the
+ * stream to the las copied byte plus one.
+ *
+ * @param stream
+ * @param value
+ * @param type
+ */
+extern void ui_ipc_stream_copy_arg(void **stream, void *value,
+                                   enum ARG_TYPE type);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

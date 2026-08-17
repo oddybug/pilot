@@ -82,14 +82,6 @@ static size_t ui_ipc_arg_size_(enum ARG_TYPE type) {
   return res;
 };
 
-/**
- * @brief Get the size in bytes of the args vector in an astgs_T struct
- *
- * @param args
- * @return
- */
-static size_t ui_ipc_argsv_get_(struct args_T *args);
-
 static size_t ui_ipc_argsv_get_(struct args_T *args) {
   u32 res = 0;
   u32 i;
@@ -275,4 +267,11 @@ void ui_ipc_stream_insert(struct map_T *map, void *stream) {
     struct entry_T *e = ui_ipc_stream_next_entry_(&s_cpy);
     gen_map_insert(map, e_name, e);
   }
+};
+
+void ui_ipc_stream_copy_arg(void **stream, void *value, enum ARG_TYPE type) {
+  void *s = *stream;
+  size_t arg_size = ui_ipc_arg_size_(type);
+  mempcpy(s, value, arg_size);
+  *stream = s;
 };

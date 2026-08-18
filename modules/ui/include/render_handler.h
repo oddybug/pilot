@@ -24,6 +24,9 @@ public:
 private:
   CefRefPtr<MyRenderProcessHandler> render_handler_;
   IMPLEMENT_REFCOUNTING(MyV8Handler);
+
+  CefRefPtr<CefListValue> ConvertV8ListToCefList(const CefV8ValueList &v8List);
+  CefRefPtr<CefValue> CefV8ValueToCefValue(CefRefPtr<CefV8Value> v8Value);
 };
 
 class MyRenderProcessHandler : public CefRenderProcessHandler {
@@ -51,15 +54,16 @@ public:
                                 CefRefPtr<CefProcessMessage> message) override;
 
 private:
-  void init_e_map();
   struct map_T *e_map_;
+  void init_e_map();
 
   bool CheckType(ARG_TYPE c_type, CefValueType js_type);
 
   CefRefPtr<CefProcessMessage> CreateMessage(const c8 *name, struct entry_T *e,
                                              CefRefPtr<CefListValue> args);
 
-  void CreateMessageBs(void* stream, const c8* name, struct args_T *in, CefRefPtr<CefListValue> args);
+  void CreateMessageBs(void *stream, const c8 *name, struct args_T *in,
+                       CefRefPtr<CefListValue> args);
 
   CallbackMap callback_map_;
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);

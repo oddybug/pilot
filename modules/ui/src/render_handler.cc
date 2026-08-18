@@ -12,26 +12,25 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
                           const CefV8ValueList &arguments,
                           CefRefPtr<CefV8Value> &retval, CefString &exception) {
 
-  // Here i neeed a reference to the hashmap metioned before so i know
-  // beforehand the types.
-  // But im in the renderer process and i have no acces to it. Need someway to
-  // acced earlier than CefInitialize(). I think we can do it with ease.
-  //
-  //
-  // So basicaly the entry_T needs: (input args - c function callback - output
-  // args(res))
-  //
-  // A wrapper needs to be maded for CEF because NO WAY i let somebody deal with
-  // CEF API
-
   if (name == "setMessageCallback") {
 
     // variadic n of elements
-    if (arguments.size() == 2 && arguments[0]->IsString() &&
-        arguments[1]->IsFunction()) {
-      std::string message_name = arguments[0]->GetStringValue();
-      CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+    if (arguments.size() > 1 && arguments[0]->IsString()) {
 
+      std::string message_name = arguments[0]->GetStringValue();
+      struct entry_T *e;
+      // ------ Find call
+      if (render_handler_.get()) {
+        e = (struct entry_T *)gen_map_find(render_handler_->e_map_,
+                                           message_name.c_str());
+        if (!e) {
+          ERROR("No call binded with key: %s", message_name.c_str());
+          return false;
+        }
+      }
+      // ------
+      // ------ Save context
+      CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
       if (context.get() && context->IsValid()) {
         int browser_id = context->GetBrowser()->GetIdentifier();
         MyRenderProcessHandler::CallbackKey key =
@@ -43,22 +42,83 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
               std::make_pair(context, arguments[1]);
           context->Exit();
         }
-
-        CefRefPtr<CefProcessMessage> msg =
-            CefProcessMessage::Create(message_name);
-        context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
+        // ------
+        // ------  create message
+        if (render_handler_.get()) {
+          if (e) {
+            CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
+                message_name.c_str(), e, ConvertV8ListToCefList(arguments));
+            context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
+          } else {
+            ERROR("NULL entry");
+            return false;
+          };
+        }
         return true;
+        // ------
       }
+    } else {
+      ERROR("wrong format for the message callback");
     }
   }
   return false;
 }
 
-struct test {
-  const char *msg[10];
-  int id;
-  float test;
-};
+#include "include/cef_v8.h"
+#include "include/cef_values.h"
+
+CefRefPtr<CefValue>
+MyV8Handler::CefV8ValueToCefValue(CefRefPtr<CefV8Value> v8Value) {
+  CefRefPtr<CefValue> value = CefValue::Create();
+
+  if (!v8Value.get() || v8Value->IsUndefined() || v8Value->IsNull()) {
+    value->SetNull();
+  } else if (v8Value->IsBool()) {
+    value->SetBool(v8Value->GetBoolValue());
+  } else if (v8Value->IsInt() || v8Value->IsUInt()) {
+    value->SetInt(v8Value->GetIntValue());
+  } else if (v8Value->IsDouble()) {
+    value->SetDouble(v8Value->GetDoubleValue());
+  } else if (v8Value->IsString()) {
+    value->SetString(v8Value->GetStringValue());
+  } else if (v8Value->IsArray()) {
+    int length = v8Value->GetArrayLength();
+    CefRefPtr<CefListValue> list = CefListValue::Create();
+    list->SetSize(length);
+
+    for (int i = 0; i < length; ++i) {
+      CefRefPtr<CefValue> elem = CefV8ValueToCefValue(v8Value->GetValue(i));
+      list->SetValue(i, elem);
+    }
+    value->SetList(list);
+  } else if (v8Value->IsObject()) {
+    CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
+    std::vector<CefString> keys;
+    v8Value->GetKeys(keys);
+
+    for (const auto &key : keys) {
+      CefRefPtr<CefValue> elem = CefV8ValueToCefValue(v8Value->GetValue(key));
+      dict->SetValue(key, elem);
+    }
+    value->SetDictionary(dict);
+  } else {
+    value->SetNull();
+  }
+
+  return value;
+}
+
+CefRefPtr<CefListValue>
+MyV8Handler::ConvertV8ListToCefList(const CefV8ValueList &v8List) {
+  CefRefPtr<CefListValue> cefList = CefListValue::Create();
+  cefList->SetSize(v8List.size());
+
+  for (size_t i = 0; i < v8List.size(); ++i) {
+    cefList->SetValue(i, CefV8ValueToCefValue(v8List[i]));
+  }
+
+  return cefList;
+}
 
 MyRenderProcessHandler::MyRenderProcessHandler() { init_e_map(); }
 
@@ -154,8 +214,10 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
         // CefV8Value!
         context->Enter();
 
+	//This shi is in case of a function
         CefRefPtr<CefV8Value> callback = it->second.second;
 
+	// fill the function or some shi
         if (callback.get() && callback->IsValid()) {
           CefV8ValueList arguments;
           arguments.push_back(CefV8Value::CreateString(message_name));
@@ -323,6 +385,7 @@ void MyRenderProcessHandler::CreateMessageBs(void *stream, const c8 *name,
     CefRefPtr<CefValue> value = args->GetValue(i);
     void *bin = (void *)value->GetBinary()->GetRawData();
 
-    ui_ipc_stream_copy_arg(reinterpret_cast<void **>(&s_cpy), bin, in->args[i]);
+    ui_ipc_stream_write_arg(reinterpret_cast<void **>(&s_cpy), bin,
+                            in->args[i]);
   }
 }

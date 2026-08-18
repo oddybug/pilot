@@ -15,6 +15,13 @@ enum ARG_TYPE {
   S32,
 };
 
+struct response_T {
+  const c8 *key;
+  struct args_T *args;
+  void *const msg;
+  void *it;
+};
+
 struct args_T {
   enum ARG_TYPE *args;
   u32 n_args;
@@ -28,11 +35,13 @@ struct entry_T {
 
 // Render process
 struct entry_c_T {
-  void (*callback)(void *data);
+  void (*callback)(void *data, struct response_T *response);
   struct entry_T e;
 };
 
-extern s32 ui_ipc_entry_add(const c8 *name, void (*callback)(void *data),
+extern s32 ui_ipc_entry_add(const c8 *name,
+                            void (*callback)(void *data,
+                                             struct response_T *response),
                             struct args_T *in_args, struct args_T *out_args);
 
 // TODO: To implement
@@ -97,8 +106,23 @@ extern void ui_ipc_stream_insert(struct map_T *map, void *stream);
  * @param value
  * @param type
  */
-extern void ui_ipc_stream_copy_arg(void **stream, void *value,
+extern void ui_ipc_stream_write_arg(void **stream, void *value,
+                                    enum ARG_TYPE type);
+
+extern void ui_ipc_stream_write_string(void **stream, const c8 *string);
+
+/**
+ * @brief read the next value from stream and copies it to value arg. Stream
+ * moves to the last copied byte plus onStream moves to the last copied byte
+ * plus one.
+ *
+ * @param stream
+ * @param value
+ * @param type
+ */
+extern void ui_ipc_stream_read_arg(void **stream, void *value,
                                    enum ARG_TYPE type);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -4,9 +4,11 @@
 
 #include "simple_handler.h"
 
+#include <cstring>
 #include <sstream>
 #include <string>
 
+#include "data/hashmap.h"
 #include "data/hashmap_helpers.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
@@ -65,11 +67,6 @@ bool SimpleHandler::OnProcessMessageReceived(
 
   const std::string message_name = message->GetName();
 
-  // 1. compare message_name in the hashmap
-  // 2. return to the user
-  // 3. be happy
-  // 4. where are the arguments ;( -> no args have been passed
-
   if (message_name == "binding_test") {
     CefRefPtr<CefProcessMessage> response =
         CefProcessMessage::Create("binding_test");
@@ -90,18 +87,50 @@ bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefBinaryValue> msg = CefBinaryValue::Create(args_bs, size);
 
     response_args->SetBinary(0, msg);
-
     frame->SendProcessMessage(PID_RENDERER, response);
+    return true;
 
-    // CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
-    // CefRefPtr<CefListValue> args = message->GetArgumentList();
+  } else if (message_name == "entry") {
 
-    // CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
+    CefRefPtr<CefListValue> args = message->GetArgumentList();
+    CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
+    void *stream = (void *)bs->GetRawData();
+    c8 *sc = (c8 *)stream;
+    c8 *key;
+    strcpy(key, sc);
+    sc += strlen(key) + sizeof(c8);
+    struct entry_c_T *e = (struct entry_c_T *)gen_map_find(e_map_, key);
+    if (e) {
 
-    // struct test res = *(struct test *)bin->GetRawData();
+      size_t args_s = ui_ipc_argsv_get(&e->e.out_args);
+      size_t msg_s = args_s + strlen(key) + sizeof(c8);
+      void *msg[msg_s];
+      struct response_T response = {
+          .key = key, .args = &e->e.out_args, .msg = msg, .it = msg};
+      strcpy((c8 *)response.msg, key);
 
-    // INFO("struct test = %s - %d - %f", res.msg, res.id, res.test);
-    // INFO("HELLOOOOOO sending dicc");
+      ui_ipc_stream_write_string((void **)&response.it, key);
+
+      e->callback((void *)sc, &response);
+
+      if (!e->e.out_args.n_args)
+        return true;
+
+      CefRefPtr<CefProcessMessage> cef_response =
+          CefProcessMessage::Create("entry_response");
+      CefRefPtr<CefListValue> cef_response_args =
+          cef_response->GetArgumentList();
+
+      CefRefPtr<CefBinaryValue> bs =
+          CefBinaryValue::Create(response.msg, msg_s);
+      cef_response_args->SetBinary(0, bs);
+      frame->SendProcessMessage(PID_RENDERER, cef_response);
+      return true;
+
+    } else {
+      ERROR("ipc call for '%s' does not exist", key);
+      return false;
+    }
   }
 
   return false;

@@ -11,7 +11,8 @@
 #include "data/hashmap.h"
 #include "log.h"
 
-s32 ui_ipc_entry_add(const c8 *name, void (*callback)(void *data),
+s32 ui_ipc_entry_add(const c8 *name,
+                     void (*callback)(void *data, struct response_T *response),
                      struct args_T *in_args, struct args_T *out_args) {
   assert(in_args && out_args && callback && name);
 
@@ -269,9 +270,27 @@ void ui_ipc_stream_insert(struct map_T *map, void *stream) {
   }
 };
 
-void ui_ipc_stream_copy_arg(void **stream, void *value, enum ARG_TYPE type) {
+void ui_ipc_stream_write_arg(void **stream, void *value, enum ARG_TYPE type) {
   void *s = *stream;
   size_t arg_size = ui_ipc_arg_size_(type);
-  mempcpy(s, value, arg_size);
+  memcpy(s, value, arg_size);
+  s += sizeof(arg_size);
   *stream = s;
 };
+
+extern void ui_ipc_stream_write_string(void **stream, const c8 *string) {
+  void *s = *stream;
+  size_t str_s = strlen(string);
+  strcpy(s, string);
+  s += str_s + sizeof(str_s);
+  *stream = s;
+};
+
+void ui_ipc_stream_read_arg(void **stream, void *value, enum ARG_TYPE type) {
+  void *s = *stream;
+  size_t arg_size = ui_ipc_arg_size_(type);
+  memcpy(value, stream, arg_size);
+  s += sizeof(arg_size);
+  *stream = s;
+};
+

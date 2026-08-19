@@ -200,6 +200,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
   if (!callback_map_.empty()) {
     const CefString &message_name = message->GetName();
+
     auto key =
         std::make_pair(message_name.ToString(), browser->GetIdentifier());
     auto it = callback_map_.find(key);
@@ -213,35 +214,62 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
         // 2. CRITICAL: Enter the context BEFORE referencing/copying the
         // CefV8Value!
         context->Enter();
+        if (message_name == "entry_response") {
+          INFO("Entry came back to render process");
+          CefRefPtr<CefListValue> args = message->GetArgumentList();
+          CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
+          void *stream = (void *)bs->GetRawData();
+          c8 *sc = (c8 *)stream;
+          c8 *key;
+          strcpy(key, sc);
+          sc += strlen(key) + sizeof(c8);
+          struct entry_T *e = (struct entry_T *)gen_map_find(e_map_, key);
 
-	//This shi is in case of a function
-        CefRefPtr<CefV8Value> callback = it->second.second;
+          if (e) {
+            if (!e->out_args.n_args) {
+              handled = true;
+            } else {
+              // This shi is in case of a function
+              CefRefPtr<CefV8Value> callback = it->second.second;
 
-	// fill the function or some shi
-        if (callback.get() && callback->IsValid()) {
-          CefV8ValueList arguments;
-          arguments.push_back(CefV8Value::CreateString(message_name));
+              // fill the function or some shi
+              if (callback.get() && callback->IsValid()) {
+                CefV8ValueList arguments;
+                for (u8 i = 0; i < e->out_args.n_args; i++) {
+			// TODO: pass directly the stream ui_ipc_stream_read_arg
+			// is wrong probably
+                  void *value;
+                  ui_ipc_stream_read_arg((void **)sc, value,
+                                         e->out_args.args[i]);
+                  PushArgument(arguments, value, e->out_args.args[i]);
+                }
 
-          CefRefPtr<CefListValue> list = message->GetArgumentList();
-          CefRefPtr<CefV8Value> args = CefV8Value::CreateArray(list->GetSize());
+                // arguments.push_back(CefV8Value::CreateString(message_name));
 
-          SetList(list, args);
-          arguments.push_back(args);
+                // CefRefPtr<CefListValue> list = message->GetArgumentList();
+                // CefRefPtr<CefV8Value> args =
+                //     CefV8Value::CreateArray(list->GetSize());
+                //
+                // SetList(list, args);
+                // arguments.push_back(args);
 
-          // Execute callback
-          CefRefPtr<CefV8Value> retval =
-              callback->ExecuteFunction(nullptr, arguments);
+                // Execute callback
+                CefRefPtr<CefV8Value> retval =
+                    callback->ExecuteFunction(nullptr, arguments);
 
-          if (retval.get() && retval->IsBool()) {
-            handled = retval->GetBoolValue();
-          } else {
-            handled = true;
+                if (retval.get() && retval->IsBool()) {
+                  handled = retval->GetBoolValue();
+                } else {
+                  handled = true;
+                }
+              }
+            }
           }
+        } else {
+
+          // 3. Exit the context
+          context->Exit();
         }
-
-        // 3. Exit the context
-        context->Exit();
-
       } else {
         // Context is no longer valid, erase entry safely
         callback_map_.erase(it);
@@ -287,35 +315,48 @@ bool MyRenderProcessHandler::CheckType(ARG_TYPE c_type, CefValueType js_type) {
 
   switch (js_type) {
   case VTYPE_INVALID:
+    INFO("INVALID");
     return false;
     break;
   case VTYPE_NULL:
+
+    INFO("NULL");
     return false;
     break;
   case VTYPE_BOOL:
+
+    INFO("BOOL");
     return false;
     break;
   case VTYPE_INT:
+    INFO("INT");
     // more checking
     return c_type == S32 ? true : false;
     break;
   case VTYPE_DOUBLE:
+
+    INFO("DOUBLE");
     return false;
     break;
   case VTYPE_STRING:
+    INFO("STRING");
     return false;
     break;
   case VTYPE_BINARY:
+    INFO("BIN");
     return false;
     break;
   case VTYPE_DICTIONARY:
+    INFO("DICC");
     return false;
     break;
   case VTYPE_LIST:
+    INFO("LIST");
     return false;
     break;
 
   case VTYPE_NUM_VALUES:
+    INFO("NUM VALUES");
     return false;
     break;
   default:
@@ -335,7 +376,7 @@ MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
   if (e->out_args.n_args > 0)
     args_cpy->Remove(0);
 
-  if (in.n_args > args->GetSize()) {
+  if (in.n_args > args_cpy->GetSize()) {
     ERROR("Not enough args provided in '%s'", name);
     return nullptr;
   }
@@ -343,7 +384,7 @@ MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
   bool valid = true;
   int i = 0;
   while (valid and i < in.n_args) {
-    valid = CheckType(in.args[i], args->GetValue(i)->GetType());
+    valid = CheckType(in.args[i], args_cpy->GetValue(i)->GetType());
     i++;
   }
   if (!valid) {
@@ -362,30 +403,84 @@ MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
     return nullptr;
   }
 
+  INFO("ALL GOODmate");
   CreateMessageBs(bs, name, &in, args_cpy);
+
+  INFO("ALL GOOD");
 
   CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("entry");
   CefRefPtr<CefListValue> args_msg = msg->GetArgumentList();
   CefRefPtr<CefBinaryValue> msg_bs = CefBinaryValue::Create(bs, bs_size);
+  args_msg->SetBinary(0, msg_bs);
 
+  INFO("ALL GOOD");
   free(bs);
-  return nullptr;
+  return msg;
 }
 
 void MyRenderProcessHandler::CreateMessageBs(void *stream, const c8 *name,
                                              struct args_T *in,
-                                             CefRefPtr<CefListValue> args) {
+                                             CefRefPtr<CefListValue> &args) {
   size_t name_len = strlen(name) + sizeof(c8);
 
-  uint8_t *s_cpy = static_cast<u8 *>(stream);
-  strcpy(reinterpret_cast<c8 *>(s_cpy), name);
+  c8 *s_cpy = static_cast<c8 *>(stream);
+  strcpy(s_cpy, name);
   s_cpy += name_len;
+  INFO("OFSET: %d", name_len);
 
   for (int i = 0; i < in->n_args; i++) {
     CefRefPtr<CefValue> value = args->GetValue(i);
-    void *bin = (void *)value->GetBinary()->GetRawData();
-
-    ui_ipc_stream_write_arg(reinterpret_cast<void **>(&s_cpy), bin,
-                            in->args[i]);
+    void *scc = s_cpy;
+    CopyValueToStream(value, (void **)&s_cpy);
+    INFO("v2 after buffer copy: %d", *(int *)scc);
   }
 }
+
+void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
+                                               void **stream) {
+  CefValueType type = value->GetType();
+  switch (type) {
+  case VTYPE_INVALID:
+
+    break;
+  case VTYPE_NULL:
+
+    break;
+  case VTYPE_BOOL:
+
+    break;
+  case VTYPE_INT: {
+    s32 v = value->GetInt();
+    ui_ipc_stream_write_arg(stream, &v, S32);
+    break;
+  }
+  case VTYPE_DOUBLE:
+    break;
+  case VTYPE_STRING:
+    break;
+  case VTYPE_BINARY:
+    break;
+  case VTYPE_DICTIONARY:
+    break;
+  case VTYPE_LIST:
+    break;
+  case VTYPE_NUM_VALUES:
+    break;
+  default:
+    break;
+  }
+};
+
+void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments,
+                                          void *value, ARG_TYPE type) {
+  switch (type) {
+  case U32:
+    arguments.push_back(CefV8Value::CreateUInt(*(u32 *)value));
+    break;
+  case S32:
+    arguments.push_back(CefV8Value::CreateInt(*(s32 *)value));
+    break;
+  default:
+    break;
+  }
+};

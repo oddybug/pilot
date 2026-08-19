@@ -83,7 +83,7 @@ static size_t ui_ipc_arg_size_(enum ARG_TYPE type) {
   return res;
 };
 
-static size_t ui_ipc_argsv_get_(struct args_T *args) {
+size_t ui_ipc_argsv_get(struct args_T *args) {
   u32 res = 0;
   u32 i;
   for (i = 0; i < args->n_args; i++) {
@@ -282,7 +282,7 @@ extern void ui_ipc_stream_write_string(void **stream, const c8 *string) {
   void *s = *stream;
   size_t str_s = strlen(string);
   strcpy(s, string);
-  s += str_s + sizeof(str_s);
+  s += str_s + sizeof(c8);
   *stream = s;
 };
 

@@ -6,6 +6,7 @@
 #include "include/cef_v8.h"
 #include "include/cef_values.h"
 #include "ui_ipc.h"
+#include <cstddef>
 #include <map>
 #include <string>
 #include <utility>
@@ -63,7 +64,11 @@ private:
                                              CefRefPtr<CefListValue> args);
 
   void CreateMessageBs(void *stream, const c8 *name, struct args_T *in,
-                       CefRefPtr<CefListValue> args);
+                       CefRefPtr<CefListValue> &args);
+
+  void CopyValueToStream(CefRefPtr<CefValue> &value, void **stream);
+
+  void PushArgument(CefV8ValueList &arguments, void *value, ARG_TYPE type);
 
   CallbackMap callback_map_;
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);

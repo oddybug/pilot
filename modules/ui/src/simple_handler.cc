@@ -4,6 +4,7 @@
 
 #include "simple_handler.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <sstream>
 #include <string>
@@ -94,27 +95,34 @@ bool SimpleHandler::OnProcessMessageReceived(
 
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
+    INFO("binarystreamsize::: %d", bs->GetSize());
     void *stream = (void *)bs->GetRawData();
     c8 *sc = (c8 *)stream;
-    c8 *key;
+    size_t key_s = strlen(sc) + 1;
+    c8 *key = (c8 *)malloc(key_s * sizeof(c8));
     strcpy(key, sc);
-    sc += strlen(key) + sizeof(c8);
+    sc += key_s + sizeof(c8);
+    s32* n;
+
     struct entry_c_T *e = (struct entry_c_T *)gen_map_find(e_map_, key);
     if (e) {
 
       size_t args_s = ui_ipc_argsv_get(&e->e.out_args);
       size_t msg_s = args_s + strlen(key) + sizeof(c8);
-      void *msg[msg_s];
+      void* msg = malloc(200);
+      // TODO: lookup if stack is vialble
+      INFO("sizeof [msg | argv_s] : [ %d : %d ]", sizeof(msg), msg_s);
+      INFO("key: %s", key);
       struct response_T response = {
           .key = key, .args = &e->e.out_args, .msg = msg, .it = msg};
-      strcpy((c8 *)response.msg, key);
-
+      // strcpy((c8 *)response.msg, key);
       ui_ipc_stream_write_string((void **)&response.it, key);
+      e->callback((void *)stream, &response);
 
-      e->callback((void *)sc, &response);
-
-      if (!e->e.out_args.n_args)
+      if (!e->e.out_args.n_args) {
+        free(key);
         return true;
+      }
 
       CefRefPtr<CefProcessMessage> cef_response =
           CefProcessMessage::Create("entry_response");
@@ -125,6 +133,8 @@ bool SimpleHandler::OnProcessMessageReceived(
           CefBinaryValue::Create(response.msg, msg_s);
       cef_response_args->SetBinary(0, bs);
       frame->SendProcessMessage(PID_RENDERER, cef_response);
+
+      free(key);
       return true;
 
     } else {

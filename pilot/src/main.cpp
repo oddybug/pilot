@@ -3,6 +3,7 @@
 
 #include "ui.h"
 #include "ui_ipc.h"
+#include <cstring>
 
 extern "C" {
 #include "camera.h"
@@ -114,10 +115,10 @@ c16 sdl_key_to_c16(SDL_Keycode key, SDL_Keymod mod) {
 
 void ipc_test_fnc(void *data, struct response_T *response) {
   s32 num;
-  ui_ipc_stream_read_arg(&data, (void *)&num, S32);
+  ui_ipc_stream_read_arg(&data, &num, S32);
 
-  INFO("key clbk: %s", response->msg);
   INFO("Number: %d", num);
+  INFO("key clbk: %s", response->msg);
   int result = 23;
 
   ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);

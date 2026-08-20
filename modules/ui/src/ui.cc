@@ -167,6 +167,7 @@ struct map_T *ui_ipc_get_browser_map() {
 };
 
 void ui_close() {
-  ui_ipc_free();
+  // TODO: Fix segfault
+  // ui_ipc_free();
   CefShutdown();
 };

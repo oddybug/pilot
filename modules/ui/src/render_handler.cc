@@ -2,64 +2,65 @@
 #include "data/hashmap.h"
 #include "data/hashmap_helpers.h"
 #include "include/internal/cef_ptr.h"
+#include "include/internal/cef_string.h"
 #include "log.h"
 #include "ui_ipc.h"
 #include <cstring>
+#include <string>
 
 class MyRenderProcessHandler;
 
 bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
                           const CefV8ValueList &arguments,
                           CefRefPtr<CefV8Value> &retval, CefString &exception) {
+  // TODO: Theres two maps. it could be just one. Not quite but. To think
 
   if (name == "setMessageCallback") {
-
-    // variadic n of elements
-    if (arguments.size() > 1 && arguments[0]->IsString()) {
-
-      std::string message_name = arguments[0]->GetStringValue();
-      struct entry_T *e;
-      // ------ Find call
-      if (render_handler_.get()) {
-        e = (struct entry_T *)gen_map_find(render_handler_->e_map_,
-                                           message_name.c_str());
-        if (!e) {
-          ERROR("No call binded with key: %s", message_name.c_str());
-          return false;
-        }
-      }
-      // ------
-      // ------ Save context
-      CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
-      if (context.get() && context->IsValid()) {
-        int browser_id = context->GetBrowser()->GetIdentifier();
-        MyRenderProcessHandler::CallbackKey key =
-            std::make_pair(message_name, browser_id);
-
-        if (render_handler_.get()) {
-          context->Enter();
-          render_handler_->callback_map_[key] =
-              std::make_pair(context, arguments[1]);
-          context->Exit();
-        }
-        // ------
-        // ------  create message
-        if (render_handler_.get()) {
-          if (e) {
-            CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
-                message_name.c_str(), e, ConvertV8ListToCefList(arguments));
-            context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
-          } else {
-            ERROR("NULL entry");
-            return false;
-          };
-        }
-        return true;
-        // ------
-      }
-    } else {
-      ERROR("wrong format for the message callback");
+    if (arguments.size() < 1) {
+      WARN("not enough arguments passed for 'setMessageCallback'");
+      return false;
+    } else if (!arguments[0]->IsString()) {
+      WARN("first argument of 'setMessageCallback' has to be a string "
+           "identifier");
+      return false;
     }
+    if (!render_handler_.get()) {
+      WARN("[INTERNAL ERROR] render handler not initialized");
+      return false;
+    }
+
+    // ------ find entry
+    std::string message_name = arguments[0]->GetStringValue().ToString();
+
+    struct entry_T *e;
+    e = (struct entry_T *)gen_map_find(render_handler_->e_map_,
+                                       message_name.c_str());
+    if (!e) {
+      ERROR("No call binded with key: %s", message_name.c_str());
+      return false;
+    }
+    // ------ Save context
+    CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+
+    if (!(context.get() && context->IsValid())) {
+      WARN("[INTERNAL ERROR] V8 context invalid");
+      return false;
+    }
+
+    s32 browser_id = context->GetBrowser()->GetIdentifier();
+
+    MyRenderProcessHandler::CallbackKey key =
+        std::make_pair(message_name, browser_id);
+
+    context->Enter();
+    render_handler_->callback_map_[key] = std::make_pair(context, arguments[1]);
+    context->Exit();
+
+    // ------  create message
+    CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
+        message_name.c_str(), e, ConvertV8ListToCefList(arguments));
+    context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
+    return true;
   }
   return false;
 }
@@ -186,8 +187,8 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
 
-  const std::string message_name = message->GetName();
-  INFO("Renderer message name: %s", message_name.c_str());
+  CefString message_name = message->GetName();
+  INFO("Renderer message name: %s", message_name.ToString().c_str());
 
   if (message_name == "ipc_dicc_stream") {
     CefRefPtr<CefListValue> args = message->GetArgumentList();
@@ -198,82 +199,74 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
   bool handled = false;
 
-  if (!callback_map_.empty()) {
-    const CefString &message_name = message->GetName();
+  if (message_name == "entry_response") {
+    if (!callback_map_.empty()) {
 
-    auto key =
-        std::make_pair(message_name.ToString(), browser->GetIdentifier());
-    auto it = callback_map_.find(key);
+      // INFO("v8 map size: %d", callback_map_.size());
+      // INFO("first ele: %s", callback_map_.begin()->first.first.c_str());
+      // INFO("second ele: %d", callback_map_.begin()->first.second);
+      // INFO("B name: %s", message_name.ToString().c_str());
+      // INFO("B ID: %d", browser->GetIdentifier());
 
-    if (it != callback_map_.end()) {
+      CefRefPtr<CefListValue> args = message->GetArgumentList();
+      CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
+      INFO("data_size: %d", bs->GetSize());
+      void *stream = (void *)bs->GetRawData();
+      c8 *sc = (c8 *)stream;
+      c8 en[strlen(sc) + 1];
+      strcpy(en, sc);
+      std::string en_s = en;
+      CallbackKey key = std::make_pair(en_s, browser->GetIdentifier());
+      auto it = callback_map_.find(key);
+
+      if (it == callback_map_.end()) {
+        WARN("No associated entry with name: %s", en);
+        return false;
+      }
       CefRefPtr<CefV8Context> context = it->second.first;
 
       // 1. Verify context validity BEFORE touching V8 handles
-      if (context.get() && context->IsValid()) {
-
-        // 2. CRITICAL: Enter the context BEFORE referencing/copying the
-        // CefV8Value!
-        context->Enter();
-        if (message_name == "entry_response") {
-          INFO("Entry came back to render process");
-          CefRefPtr<CefListValue> args = message->GetArgumentList();
-          CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
-          void *stream = (void *)bs->GetRawData();
-          c8 *sc = (c8 *)stream;
-          c8 *key;
-          strcpy(key, sc);
-          sc += strlen(key) + sizeof(c8);
-          struct entry_T *e = (struct entry_T *)gen_map_find(e_map_, key);
-
-          if (e) {
-            if (!e->out_args.n_args) {
-              handled = true;
-            } else {
-              // This shi is in case of a function
-              CefRefPtr<CefV8Value> callback = it->second.second;
-
-              // fill the function or some shi
-              if (callback.get() && callback->IsValid()) {
-                CefV8ValueList arguments;
-                for (u8 i = 0; i < e->out_args.n_args; i++) {
-			// TODO: pass directly the stream ui_ipc_stream_read_arg
-			// is wrong probably
-                  void *value;
-                  ui_ipc_stream_read_arg((void **)sc, value,
-                                         e->out_args.args[i]);
-                  PushArgument(arguments, value, e->out_args.args[i]);
-                }
-
-                // arguments.push_back(CefV8Value::CreateString(message_name));
-
-                // CefRefPtr<CefListValue> list = message->GetArgumentList();
-                // CefRefPtr<CefV8Value> args =
-                //     CefV8Value::CreateArray(list->GetSize());
-                //
-                // SetList(list, args);
-                // arguments.push_back(args);
-
-                // Execute callback
-                CefRefPtr<CefV8Value> retval =
-                    callback->ExecuteFunction(nullptr, arguments);
-
-                if (retval.get() && retval->IsBool()) {
-                  handled = retval->GetBoolValue();
-                } else {
-                  handled = true;
-                }
-              }
-            }
-          }
-        } else {
-
-          // 3. Exit the context
-          context->Exit();
-        }
-      } else {
-        // Context is no longer valid, erase entry safely
-        callback_map_.erase(it);
+      if (!(context.get() && context->IsValid())) {
+        WARN("[INTERNAL ERROR] V8 context invalid");
+        return false;
       }
+      context->Enter();
+      sc += strlen(en) + sizeof(c8);
+      struct entry_T *e = (struct entry_T *)gen_map_find(e_map_, en);
+
+      if (!e) {
+        WARN("No associated entry with name: %s", en);
+        return false;
+      }
+
+      CefRefPtr<CefV8Value> callback = it->second.second;
+
+      if (!(callback.get() && callback->IsValid())) {
+        return false; // handled = false;
+      }
+
+      CefV8ValueList arguments;
+      for (u8 i = 0; i < e->out_args.n_args; i++) {
+        // TODO: pass directly the stream ui_ipc_stream_read_arg
+        // is wrong probably
+        s32 *value;
+        ui_ipc_stream_read_arg((void **)&sc, value, e->out_args.args[i]);
+        PushArgument(arguments, value, e->out_args.args[i]);
+      }
+      // Execute callback
+      CefRefPtr<CefV8Value> retval =
+          callback->ExecuteFunction(nullptr, arguments);
+
+      if (retval.get() && retval->IsBool()) {
+
+      INFO("RETURN VALUE: %d", retval->GetBoolValue());
+        handled = retval->GetBoolValue();
+      } else {
+        handled = true;
+      }
+
+      context->Exit();
+      callback_map_.erase(it);
     }
   }
 
@@ -403,17 +396,13 @@ MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
     return nullptr;
   }
 
-  INFO("ALL GOODmate");
   CreateMessageBs(bs, name, &in, args_cpy);
-
-  INFO("ALL GOOD");
 
   CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("entry");
   CefRefPtr<CefListValue> args_msg = msg->GetArgumentList();
   CefRefPtr<CefBinaryValue> msg_bs = CefBinaryValue::Create(bs, bs_size);
   args_msg->SetBinary(0, msg_bs);
 
-  INFO("ALL GOOD");
   free(bs);
   return msg;
 }
@@ -421,7 +410,7 @@ MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
 void MyRenderProcessHandler::CreateMessageBs(void *stream, const c8 *name,
                                              struct args_T *in,
                                              CefRefPtr<CefListValue> &args) {
-  size_t name_len = strlen(name) + sizeof(c8);
+  size_t name_len = strlen(name) + 1;
 
   c8 *s_cpy = static_cast<c8 *>(stream);
   strcpy(s_cpy, name);

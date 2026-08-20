@@ -70,6 +70,7 @@ private:
 
   void PushArgument(CefV8ValueList &arguments, void *value, ARG_TYPE type);
 
+
   CallbackMap callback_map_;
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);
 };

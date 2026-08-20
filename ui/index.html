@@ -27,7 +27,6 @@
       button:hover {
         background-color: #0056b3;
       }
-      /* Added a simple class for the 'active' state */
       button.clicked {
         background-color: #6c757d !important;
       }
@@ -39,23 +38,51 @@
   </head>
   <body>
     <div style="text-align: center">
-      <button id="sendQueryBtn">Send Message to C++</button>
-      <p id="status">Waiting for interaction...</p>
+      <button id="sendQueryBtnStr">Send string to C++</button>
+      <p id="result">Waiting for interaction...</p>
+      <br />
+      <button id="sendQueryBtnInt">Send number to C++</button>
+      <p id="resultInt">Waiting for interaction...</p>
     </div>
 
     <script>
-      document
-        .getElementById("sendQueryBtn")
-        .addEventListener("click", function () {
-          const statusElement = document.getElementById("status");
-          const btn = this;
-          // 1. Change color immediately on click
-          btn.classList.add("clicked");
-          btn.innerText = "Sending...";
-          // Ensure the CEF query object exists
-          var result = window.sayHello("Interaction Test");
-          console.log(result);
-        });
+      const btnInt = document.getElementById("sendQueryBtnInt");
+      const btn = document.getElementById("sendQueryBtnStr");
+      const resultText = document.getElementById("result");
+      const resultTextInt = document.getElementById("resultInt");
+
+      // Handle the button click to send message to C++
+      btn.addEventListener("click", function () {
+        btn.classList.add("clicked");
+        resultText.innerText = "Sending request to C++...";
+
+        // Triggers C++ IPC flow
+        app.setMessageCallback(
+          "binding_test",
+          function (name) {
+            resultText.innerText = "Response: " + name;
+            btn.classList.remove("clicked");
+          },
+          "hola",
+        );
+      });
+
+      btnInt.addEventListener("click", function () {
+        btnInt.classList.add("clicked");
+        resultTextInt.innerText = "Sending request to C++...";
+
+        // Triggers C++ IPC flow
+
+        app.setMessageCallback(
+          "another_call",
+          function (number) {
+            resultTextInt.innerText = "Response: " + number;
+            btnInt.classList.remove("clicked");
+            return true;
+          },
+          Number(2),
+        );
+      });
     </script>
   </body>
 </html>

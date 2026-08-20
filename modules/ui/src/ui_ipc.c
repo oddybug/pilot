@@ -250,7 +250,7 @@ void ui_ipc_stream_insert(struct map_T *map, void *stream) {
   void *s_cpy = stream;
   u32 n_entries;
 
-  mempcpy(&n_entries, s_cpy, sizeof(u32));
+  memcpy(&n_entries, s_cpy, sizeof(u32));
   s_cpy += sizeof(u32);
 
   u32 i;
@@ -278,7 +278,7 @@ void ui_ipc_stream_write_arg(void **stream, void *value, enum ARG_TYPE type) {
   *stream = s;
 };
 
-extern void ui_ipc_stream_write_string(void **stream, const c8 *string) {
+void ui_ipc_stream_write_string(void **stream, const c8 *string) {
   void *s = *stream;
   size_t str_s = strlen(string);
   strcpy(s, string);
@@ -289,8 +289,7 @@ extern void ui_ipc_stream_write_string(void **stream, const c8 *string) {
 void ui_ipc_stream_read_arg(void **stream, void *value, enum ARG_TYPE type) {
   void *s = *stream;
   size_t arg_size = ui_ipc_arg_size_(type);
-  memcpy(value, stream, arg_size);
+  memcpy(value, s, arg_size);
   s += sizeof(arg_size);
   *stream = s;
 };
-

@@ -66,11 +66,11 @@ public:
 
   void ResizeBrowsers(u32 width, u32 height);
 
-  struct map_T *GetEntriesMap();
+  struct map_T *GetPullMsgMap();
 
 private:
   void init_e_map();
-  struct map_T *e_map_;
+  struct map_T *pull_msg_m_;
   bool is_closed_ = false;
 
   u32 window_w = 0;

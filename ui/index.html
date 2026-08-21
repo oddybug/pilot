@@ -67,6 +67,7 @@
         );
       });
 
+      var n = 0;
       btnInt.addEventListener("click", function () {
         btnInt.classList.add("clicked");
         resultTextInt.innerText = "Sending request to C++...";
@@ -76,7 +77,8 @@
         app.setMessageCallback(
           "another_call",
           function (number) {
-            resultTextInt.innerText = "Response: " + number;
+            n += 1;
+            resultTextInt.innerText = "Response: " + n;
             btnInt.classList.remove("clicked");
             return true;
           },

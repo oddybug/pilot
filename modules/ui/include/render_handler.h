@@ -34,12 +34,15 @@ class MyRenderProcessHandler : public CefRenderProcessHandler {
   friend class MyV8Handler;
 
 public:
+  static MyRenderProcessHandler *GetInstance();
+
   typedef std::pair<std::string, int> CallbackKey;
   typedef std::pair<CefRefPtr<CefV8Context>, CefRefPtr<CefV8Value>>
       CallbackValue;
   typedef std::map<CallbackKey, CallbackValue> CallbackMap;
 
   MyRenderProcessHandler();
+  ~MyRenderProcessHandler();
 
   void OnContextCreated(CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefFrame> frame,
@@ -53,23 +56,24 @@ public:
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override;
+  struct map_T *GetPullMsgMap();
 
 private:
-  struct map_T *e_map_;
-  void init_e_map();
+  struct map_T *msg_pull_m_;
+  void init_msg_pull_m_();
 
-  bool CheckType(ARG_TYPE c_type, CefValueType js_type);
+  bool CheckType(enum ARG_TYPE c_type, CefValueType js_type);
 
-  CefRefPtr<CefProcessMessage> CreateMessage(const c8 *name, struct entry_T *e,
+  CefRefPtr<CefProcessMessage> CreateMessage(const c8 *name,
+                                             struct pull_msg_e_render *e,
                                              CefRefPtr<CefListValue> args);
 
-  void CreateMessageBs(void *stream, const c8 *name, struct args_T *in,
+  void CreateMessageBs(msg_T msg, const c8 *name, struct args *in,
                        CefRefPtr<CefListValue> &args);
 
-  void CopyValueToStream(CefRefPtr<CefValue> &value, void **stream);
+  void CopyValueToStream(CefRefPtr<CefValue> &value, msg_T msg);
 
-  void PushArgument(CefV8ValueList &arguments, void *value, ARG_TYPE type);
-
+  void PushArgument(CefV8ValueList &arguments, void *value, enum ARG_TYPE type);
 
   CallbackMap callback_map_;
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);

@@ -19,12 +19,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CEFSIMPLE_SRCS
     src/simple_app.cc
     src/ui.cc
+    src/ui_ipc.c
+    src/ui_msg_render.c
+    src/ui_msg_browser.c
     include/simple_app.h
     src/simple_handler.cc
     include/simple_handler.h
     include/render_handler.h
-    src/render_handler.cc
-    src/ui_ipc.c)
+    src/render_handler.cc)
 
 set(CEFSIMPLE_SRCS_LINUX src/simple_handler_linux.cc)
 set(CEFSIMPLE_SRCS_MAC src/cefsimple_mac.mm src/simple_handler_mac.mm)

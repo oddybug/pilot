@@ -1,14 +1,22 @@
 #include "render_handler.h"
 #include "data/hashmap.h"
 #include "data/hashmap_helpers.h"
+#include "include/base/cef_logging.h"
 #include "include/internal/cef_ptr.h"
 #include "include/internal/cef_string.h"
 #include "log.h"
 #include "ui_ipc.h"
+#include "ui_msg_render.h"
 #include <cstring>
 #include <string>
 
 class MyRenderProcessHandler;
+
+MyRenderProcessHandler *g_instance = nullptr;
+
+MyRenderProcessHandler *MyRenderProcessHandler::GetInstance() {
+  return g_instance;
+};
 
 bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
                           const CefV8ValueList &arguments,
@@ -32,9 +40,9 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     // ------ find entry
     std::string message_name = arguments[0]->GetStringValue().ToString();
 
-    struct entry_T *e;
-    e = (struct entry_T *)gen_map_find(render_handler_->e_map_,
-                                       message_name.c_str());
+    struct pull_msg_e_render *e;
+    e = (struct pull_msg_e_render *)gen_map_find(render_handler_->msg_pull_m_,
+                                                 message_name.c_str());
     if (!e) {
       ERROR("No call binded with key: %s", message_name.c_str());
       return false;
@@ -121,7 +129,14 @@ MyV8Handler::ConvertV8ListToCefList(const CefV8ValueList &v8List) {
   return cefList;
 }
 
-MyRenderProcessHandler::MyRenderProcessHandler() { init_e_map(); }
+MyRenderProcessHandler::MyRenderProcessHandler() {
+  DCHECK(!g_instance);
+  g_instance = this;
+
+  init_msg_pull_m_();
+}
+
+MyRenderProcessHandler::~MyRenderProcessHandler() { g_instance = nullptr; };
 
 void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
                                               CefRefPtr<CefFrame> frame,
@@ -191,10 +206,14 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
   INFO("Renderer message name: %s", message_name.ToString().c_str());
 
   if (message_name == "ipc_dicc_stream") {
+
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bin = args->GetBinary(0);
     void *data = (void *)bin->GetRawData();
-    ui_ipc_stream_insert(e_map_, data);
+
+    ui_msg_pull_rm_add(data, bin->GetSize());
+
+    // ui_ipc_stream_insert(e_map_, data); DEPRECATED
   };
 
   bool handled = false;
@@ -215,6 +234,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       c8 *sc = (c8 *)stream;
       c8 en[strlen(sc) + 1];
       strcpy(en, sc);
+
       std::string en_s = en;
       CallbackKey key = std::make_pair(en_s, browser->GetIdentifier());
       auto it = callback_map_.find(key);
@@ -232,12 +252,16 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       }
       context->Enter();
       sc += strlen(en) + sizeof(c8);
-      struct entry_T *e = (struct entry_T *)gen_map_find(e_map_, en);
+      struct pull_msg_e_render *e =
+          (struct pull_msg_e_render *)gen_map_find(msg_pull_m_, en);
 
       if (!e) {
         WARN("No associated entry with name: %s", en);
         return false;
       }
+
+      struct args out_args = e->out;
+      msg_T msg = ui_msg_get_fs(en, &out_args);
 
       CefRefPtr<CefV8Value> callback = it->second.second;
 
@@ -246,20 +270,22 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       }
 
       CefV8ValueList arguments;
-      for (u8 i = 0; i < e->out_args.n_args; i++) {
+      for (u8 i = 0; i < e->out.n_args; i++) {
         // TODO: pass directly the stream ui_ipc_stream_read_arg
         // is wrong probably
-        s32 *value;
-        ui_ipc_stream_read_arg((void **)&sc, value, e->out_args.args[i]);
-        PushArgument(arguments, value, e->out_args.args[i]);
+        // URGENT! THE VALUE IS INITIALIZED IN STACK WRONG SO WRONG
+        void *value = ui_msg_arg_read(msg);
+        // ui_ipc_stream_read_arg((void **)&sc, value, e->out.args[i]);
+        PushArgument(arguments, value, e->out.args[i]);
       }
+
       // Execute callback
       CefRefPtr<CefV8Value> retval =
           callback->ExecuteFunction(nullptr, arguments);
 
       if (retval.get() && retval->IsBool()) {
 
-      INFO("RETURN VALUE: %d", retval->GetBoolValue());
+        INFO("RETURN VALUE: %d", retval->GetBoolValue());
         handled = retval->GetBoolValue();
       } else {
         handled = true;
@@ -272,6 +298,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
   return handled;
 }
+
 void MyRenderProcessHandler::OnContextReleased(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefRefPtr<CefV8Context> context) {
@@ -284,27 +311,23 @@ void MyRenderProcessHandler::OnContextReleased(
   }
 }
 
-static void pilot_entry_free_entry_c_(struct entry_c_T *e);
-
-static void pilot_entry_free_entry_c_(struct entry_c_T *e) {
-  free(e->e.in_args.args);
-  free(e->e.out_args.args);
-};
+struct map_T *MyRenderProcessHandler::GetPullMsgMap() { return msg_pull_m_; };
 
 static void pilot_entry_free_item_fn_(struct item_T *item);
 
 static void pilot_entry_free_item_fn_(struct item_T *item) {
-  struct entry_c_T *value = (entry_c_T *)item->value;
-  pilot_entry_free_entry_c_(value);
+  struct pull_msg_e_render *value = (pull_msg_e_render *)item->value;
+  ui_msg_pullme_free(value);
 };
 
-void MyRenderProcessHandler::init_e_map() {
-  e_map_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
-                          pilot_entry_free_item_fn_);
+void MyRenderProcessHandler::init_msg_pull_m_() {
+  msg_pull_m_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p,
+                               gen_map_cmp_key_c8p, pilot_entry_free_item_fn_);
 };
 
 // TODO: A LOT OF MORE CHECKING IS NEEDED
-bool MyRenderProcessHandler::CheckType(ARG_TYPE c_type, CefValueType js_type) {
+bool MyRenderProcessHandler::CheckType(enum ARG_TYPE c_type,
+                                       CefValueType js_type) {
 
   switch (js_type) {
   case VTYPE_INVALID:
@@ -358,15 +381,14 @@ bool MyRenderProcessHandler::CheckType(ARG_TYPE c_type, CefValueType js_type) {
   }
   return true;
 };
-CefRefPtr<CefProcessMessage>
-MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
-                                      CefRefPtr<CefListValue> args) {
+CefRefPtr<CefProcessMessage> MyRenderProcessHandler::CreateMessage(
+    const c8 *name, struct pull_msg_e_render *e, CefRefPtr<CefListValue> args) {
 
-  struct args_T in = e->in_args;
+  struct args in = e->in;
 
   CefRefPtr<CefListValue> args_cpy = args->Copy();
   args_cpy->Remove(0);
-  if (e->out_args.n_args > 0)
+  if (e->out.n_args > 0)
     args_cpy->Remove(0);
 
   if (in.n_args > args_cpy->GetSize()) {
@@ -381,52 +403,38 @@ MyRenderProcessHandler::CreateMessage(const c8 *name, struct entry_T *e,
     i++;
   }
   if (!valid) {
-    // TODO: Could provide more info. Could not read type X expected Y
+    // TODO: Could provide more info. Could not read type X expected Y. WE DO
+    // NOW BUT NEED TO CHECK
     ERROR("Wrong arg types provided in call '%s'", name);
     return nullptr;
   }
 
   size_t name_len = strlen(name) + sizeof(c8);
-  size_t bs_size = name_len + ui_ipc_argsv_get(&e->in_args);
+  size_t bs_size = name_len + ui_args_argsv_get(&e->in);
 
-  void *bs = malloc(bs_size);
+  msg_T msg = ui_msg_pull_render_create((c8 *)name);
+  CreateMessageBs(msg, name, &in, args_cpy);
 
-  if (!bs) {
-    ERROR("failed to allocate memory");
-    return nullptr;
-  }
-
-  CreateMessageBs(bs, name, &in, args_cpy);
-
-  CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("entry");
-  CefRefPtr<CefListValue> args_msg = msg->GetArgumentList();
-  CefRefPtr<CefBinaryValue> msg_bs = CefBinaryValue::Create(bs, bs_size);
+  CefRefPtr<CefProcessMessage> cef_msg = CefProcessMessage::Create("entry");
+  CefRefPtr<CefListValue> args_msg = cef_msg->GetArgumentList();
+  CefRefPtr<CefBinaryValue> msg_bs =
+      CefBinaryValue::Create(ui_msg_bitstream(msg), bs_size);
   args_msg->SetBinary(0, msg_bs);
 
-  free(bs);
-  return msg;
+  return cef_msg;
 }
 
-void MyRenderProcessHandler::CreateMessageBs(void *stream, const c8 *name,
-                                             struct args_T *in,
+void MyRenderProcessHandler::CreateMessageBs(msg_T msg, const c8 *name,
+                                             struct args *in,
                                              CefRefPtr<CefListValue> &args) {
-  size_t name_len = strlen(name) + 1;
-
-  c8 *s_cpy = static_cast<c8 *>(stream);
-  strcpy(s_cpy, name);
-  s_cpy += name_len;
-  INFO("OFSET: %d", name_len);
-
   for (int i = 0; i < in->n_args; i++) {
     CefRefPtr<CefValue> value = args->GetValue(i);
-    void *scc = s_cpy;
-    CopyValueToStream(value, (void **)&s_cpy);
-    INFO("v2 after buffer copy: %d", *(int *)scc);
+    CopyValueToStream(value, msg);
   }
 }
 
 void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
-                                               void **stream) {
+                                               msg_T msg) {
   CefValueType type = value->GetType();
   switch (type) {
   case VTYPE_INVALID:
@@ -440,7 +448,9 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
     break;
   case VTYPE_INT: {
     s32 v = value->GetInt();
-    ui_ipc_stream_write_arg(stream, &v, S32);
+    ui_msg_push_s32(msg, v);
+    // ui_ipc_
+    // ui_ipc_stream_write_arg(stream, &v, S32);
     break;
   }
   case VTYPE_DOUBLE:
@@ -461,7 +471,7 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
 };
 
 void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments,
-                                          void *value, ARG_TYPE type) {
+                                          void *value, enum ARG_TYPE type) {
   switch (type) {
   case U32:
     arguments.push_back(CefV8Value::CreateUInt(*(u32 *)value));

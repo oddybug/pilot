@@ -113,24 +113,24 @@ c16 sdl_key_to_c16(SDL_Keycode key, SDL_Keymod mod) {
   }
 }
 
-void ipc_test_fnc(void *data, struct response_T *response) {
+void ipc_test_fnc(msg_T msg, msg_T response) {
   s32 num;
-  ui_ipc_stream_read_arg(&data, &num, S32);
-
+  ui_msg_arg_read_s32(msg, &num);
   INFO("Number: %d", num);
-  INFO("key clbk: %s", response->msg);
-  int result = 23;
+  INFO("key clbk: %s", (c8 *)msg);
 
-  ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);
+  int result = 23;
+  ui_msg_push_s32(response, result);
+  // ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);
 };
 
 void set_ipc_calls() {
   enum ARG_TYPE i[2] = {S32};
-  struct args_T args_i = (struct args_T){.args = i, .n_args = 1};
+  struct args args_i = (struct args){.args = i, .n_args = 1};
   enum ARG_TYPE o[2] = {S32};
-  struct args_T args_o = (struct args_T){.args = o, .n_args = 1};
+  struct args args_o = (struct args){.args = o, .n_args = 1};
 
-  ui_ipc_entry_add("another_call", ipc_test_fnc, &args_i, &args_o);
+  ui_msg_pull_new_entry("another_call", ipc_test_fnc, &args_i, &args_o);
 
   INFO("SUCCESFULL ENTRY ADDED");
 }

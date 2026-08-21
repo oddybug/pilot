@@ -21,6 +21,7 @@
 #include "include/wrapper/cef_helpers.h"
 #include "log.h"
 #include "ui_ipc.h"
+#include "ui_msg_browser.h"
 
 namespace {
 
@@ -61,6 +62,8 @@ struct test {
   float test;
 };
 
+//extern msg_T ui_msg_create_(const c8 *name, struct args *args);
+
 bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
@@ -79,29 +82,37 @@ bool SimpleHandler::OnProcessMessageReceived(
   } else if (message_name == "ipc_dicc_req") {
     CefRefPtr<CefProcessMessage> response =
         CefProcessMessage::Create("ipc_dicc_stream");
-    void *args_bs = ui_ipc_stream_get();
-
     CefRefPtr<CefListValue> response_args = response->GetArgumentList();
 
-    u32 size_n; //(dummi var)
-    u32 size = ui_ipc_stream_get_size(&size_n);
-    CefRefPtr<CefBinaryValue> msg = CefBinaryValue::Create(args_bs, size);
+    struct map_it_T *it;
+    gen_map_it_set_begin(pull_msg_m_, it);
+    msg_map_T msg = ui_msg_pull_bm_e(it);
+    while (msg) {
+      CefRefPtr<CefBinaryValue> cef_msg =
+          CefBinaryValue::Create(ui_msg_map_bs(msg), ui_msg_map_size(msg));
+      response_args->SetBinary(0, cef_msg);
+      ui_msg_map_free(msg);
+      frame->SendProcessMessage(PID_RENDERER, response);
+    }
 
-    response_args->SetBinary(0, msg);
-    frame->SendProcessMessage(PID_RENDERER, response);
+    // msg_T msg = ui_msg_bm();
+    // void *args_bs = ui_ipc_stream_get();
+
+    // u32 size_n; //(dummi var)
+    // u32 size = ui_ipc_stream_get_size(&size_n);
+
     return true;
 
   } else if (message_name == "entry") {
 
+    // msg_T msg;
+
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
-    INFO("binarystreamsize::: %d", bs->GetSize());
-    void *stream = malloc(bs->GetSize());
-    if (!stream) {
-      return false;
-    }
+    c8 *s_c[bs->GetSize()];
+    void *stream = (void *)s_c;
+
     size_t read = bs->GetData(stream, bs->GetSize(), 0);
-    INFO("read n bytes in getdata : n = %d", read);
 
     c8 *sc = (c8 *)stream;
     size_t key_s = strlen(sc) + sizeof(c8);
@@ -109,42 +120,40 @@ bool SimpleHandler::OnProcessMessageReceived(
     strcpy(key, sc);
     sc += key_s;
 
-    struct entry_c_T *e = (struct entry_c_T *)gen_map_find(e_map_, key);
-    if (e) {
-      size_t args_s = ui_ipc_argsv_get(&e->e.out_args);
-      size_t msg_s = args_s + strlen(key) + sizeof(c8);
-      void *msg = malloc(msg_s);
-      // TODO: lookup if stack is vialble
-      struct response_T response = {
-          .key = key, .args = &e->e.out_args, .msg = msg, .it = msg};
-      ui_ipc_stream_write_string((void **)&response.it, key);
-      e->callback((void *)sc, &response);
-
-      if (!e->e.out_args.n_args) {
-        free(key);
-        return true;
-      }
-
-      CefRefPtr<CefProcessMessage> cef_response =
-          CefProcessMessage::Create("entry_response");
-      CefRefPtr<CefListValue> cef_response_args =
-          cef_response->GetArgumentList();
-
-      CefRefPtr<CefBinaryValue> bs =
-          CefBinaryValue::Create(response.msg, msg_s);
-      cef_response_args->SetBinary(0, bs);
-      frame->SendProcessMessage(PID_RENDERER, cef_response);
-
-      free(msg);
-      free(key);
-      return true;
-
-    } else {
-      ERROR("ipc call for '%s' does not exist", key);
+    struct pull_msg_e *e = (struct pull_msg_e *)gen_map_find(pull_msg_m_, key);
+    if (!e) {
+      WARN("ipc call for '%s' does not exist", key);
       return false;
     }
-  }
 
+    msg_T msg = ui_msg_get_fs(stream, &e->in);
+    if (!msg) {
+      WARN("msg couldnt get created");
+      return false;
+    }
+
+    msg_T response = ui_msg_create_(key, &e->out);
+    e->callback(msg, response);
+
+    if (!e->out.n_args) {
+      free(key);
+      return true;
+    }
+
+    CefRefPtr<CefProcessMessage> cef_response =
+        CefProcessMessage::Create("entry_response");
+    CefRefPtr<CefListValue> cef_response_args = cef_response->GetArgumentList();
+
+    CefRefPtr<CefBinaryValue> bs_res = CefBinaryValue::Create(
+        ui_msg_bitstream(response), ui_msg_size(response));
+    cef_response_args->SetBinary(0, bs_res);
+    frame->SendProcessMessage(PID_RENDERER, cef_response);
+
+    free(msg);
+    free(response);
+    free(key);
+    return true;
+  }
   return false;
 }
 
@@ -323,26 +332,26 @@ void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
   }
 };
 
-struct map_T *SimpleHandler::GetEntriesMap() { return e_map_; };
+struct map_T *SimpleHandler::GetPullMsgMap() { return pull_msg_m_; };
 
-static void pilot_entry_free_entry_(struct entry_T *e);
+static void pilot_entry_free_entry_(struct pull_msg_e *e);
 
-static void pilot_entry_free_entry_(struct entry_T *e) {
-  free(e->in_args.args);
-  free(e->out_args.args);
+static void pilot_entry_free_entry_(struct pull_msg_e *e) {
+  free(e->in.args);
+  free(e->out.args);
 };
 
 static void pilot_entry_free_item_fn_(struct item_T *item);
 
 static void pilot_entry_free_item_fn_(struct item_T *item) {
-  struct entry_T *value = (entry_T *)item->value;
+  struct pull_msg_e *value = (pull_msg_e *)item->value;
   pilot_entry_free_entry_(value);
 };
 
 void SimpleHandler::init_e_map() {
 
-  e_map_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
-                          pilot_entry_free_item_fn_);
+  pull_msg_m_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p,
+                               gen_map_cmp_key_c8p, pilot_entry_free_item_fn_);
 };
 
 // TODO: to implement

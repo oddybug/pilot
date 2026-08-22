@@ -119,7 +119,7 @@ s32 gen_map_insert(struct map_T *map, const void *key, void *value) {
   u32 hash = map->hash_fn(key);
   u32 index = hash % map->b_num;
 
-  struct item_T *head = (struct item_T *)map->bucket[index];
+  struct item_T *head = map->bucket[index];
   struct item_T *curr = head;
 
   while (curr != NULL) {
@@ -136,11 +136,10 @@ s32 gen_map_insert(struct map_T *map, const void *key, void *value) {
     return 1;
   }
 
-  new_item->key = key;
+  new_item->key = (void *)key;
   new_item->value = value;
   new_item->next = head;
   map->bucket[index] = new_item;
-
   return 0;
 }
 

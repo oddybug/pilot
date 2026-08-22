@@ -18,9 +18,7 @@ s32 ui_msg_pull_rm_add(void *stream, size_t size);
 
 msg_T ui_msg_pull_render_create(c8 *name);
 
-//extern struct map_T *ui_msg_render_pull_m();
-
-extern void *ui_msg_arg_read(msg_T msg);
+extern void ui_msg_arg_read(msg_T msg, void *val);
 
 #ifdef __cplusplus
 }

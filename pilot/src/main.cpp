@@ -117,7 +117,7 @@ void ipc_test_fnc(msg_T msg, msg_T response) {
   s32 num;
   ui_msg_arg_read_s32(msg, &num);
   INFO("Number: %d", num);
-  INFO("key clbk: %s", (c8 *)msg);
+  INFO("key clbk: %s", ui_msg_bitstream(msg));
 
   int result = 23;
   ui_msg_push_s32(response, result);
@@ -125,12 +125,13 @@ void ipc_test_fnc(msg_T msg, msg_T response) {
 };
 
 void set_ipc_calls() {
-  enum ARG_TYPE i[2] = {S32};
+  enum ARG_TYPE i[1] = {S32};
   struct args args_i = (struct args){.args = i, .n_args = 1};
-  enum ARG_TYPE o[2] = {S32};
+  enum ARG_TYPE o[1] = {S32};
   struct args args_o = (struct args){.args = o, .n_args = 1};
 
   ui_msg_pull_new_entry("another_call", ipc_test_fnc, &args_i, &args_o);
+  ui_msg_pull_new_entry("onecall", ipc_test_fnc, &args_i, &args_o);
 
   INFO("SUCCESFULL ENTRY ADDED");
 }
@@ -252,6 +253,8 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  set_ipc_calls();
+
   ui_set_ui_texture_callback(&ui_texture_clbk);
 
   iom_init();
@@ -285,8 +288,6 @@ int main(int argc, char *argv[]) {
   ren_entity_add_component(e1, COMPONENT_MATERIAL, m_id);
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
   ren_entity_add_component(e1, COMPONENT_PROGRAM, p_id);
-
-  set_ipc_calls();
 
   while (!iom_can_close()) {
     iom_poll_events();

@@ -27,6 +27,7 @@ struct msg_map {
 const c8 *ui_args_e2s_(enum ARG_TYPE type);
 
 const c8 *ui_args_e2s_(enum ARG_TYPE type) {
+  INFO("h");
   switch (type) {
   case S32:
     return "S32";
@@ -112,7 +113,7 @@ msg_map_T ui_msg_map_create(const c8 *name, struct args *in, struct args *out) {
     goto err_name;
 
   strcpy(msg->msg, name);
-  msg->it += strlen(name) + sizeof(c8);
+  msg->it = msg->msg + strlen(name) + sizeof(c8);
 
   return msg;
 err_name:
@@ -198,9 +199,8 @@ err_e:
   return 1;
 };
 
-extern msg_T ui_msg_create_(const c8 *name, struct args *args);
-
 msg_T ui_msg_create_(const c8 *name, struct args *args) {
+  assert(args && name);
   msg_T msg = malloc(sizeof(struct msg));
   if (!msg)
     goto err;
@@ -211,8 +211,9 @@ msg_T ui_msg_create_(const c8 *name, struct args *args) {
     goto err_name;
   strcpy(msg->msg, name);
 
-  msg->it = msg + strlen(name) + 2 * sizeof(c8);
+  msg->it = msg->msg + strlen(name) + 2 * sizeof(c8);
   msg->i = 0;
+  msg->args = args;
 
   return msg;
 err_name:
@@ -222,14 +223,16 @@ err:
 };
 
 extern msg_T ui_msg_get_fs(void *stream, struct args *args) {
-  msg_T msg;
+  msg_T msg = malloc(sizeof(struct msg));
+  if (!msg)
+    return NULL;
   msg->args = args;
   size_t msg_size = ui_args_argsv_get(args) + strlen(stream) + sizeof(c8);
   msg->msg = malloc(msg_size);
   if (!msg->msg)
     return NULL;
   memcpy(msg->msg, stream, msg_size);
-  msg->it = msg + strlen(stream) + 2 * sizeof(c8);
+  msg->it = msg->msg + strlen(stream) + 2 * sizeof(c8);
   msg->i = 0;
   return msg;
 };
@@ -243,6 +246,9 @@ extern size_t ui_msg_size(msg_T msg) {
 extern void *ui_msg_bitstream(msg_T msg) { return msg->msg; };
 
 s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
+  assert(msg);
+  assert(msg->msg);
+  assert(msg->args);
   if (msg->i > msg->args->n_args) {
     WARN("No more arguments to read in %s", msg->msg);
     return 1;
@@ -278,26 +284,20 @@ s32 ui_msg_arg_read_u32(msg_T msg, u32 *val) {
   return 0;
 };
 
-extern void *ui_msg_arg_read(msg_T msg) {
+void ui_msg_arg_read(msg_T msg, void* val) {
   switch (msg->args->args[msg->i]) {
   S32: {
-    s32 *val;
     ui_msg_arg_read_s32(msg, val);
-    return (void *)val;
     break;
   }
   U32: {
-    u32 *val;
     ui_msg_arg_read_u32(msg, val);
-    return (void *)val;
     break;
   }
   ARG_TYPE:
-    return NULL;
     break;
   default:
 
-    return NULL;
     break;
   }
 };
@@ -320,12 +320,15 @@ s32 ui_msg_push_s32(msg_T msg, s32 val) {
     WARN("No more arguments to push in %s", msg->msg);
     return 1;
   }
+
   enum ARG_TYPE t = msg->args->args[msg->i];
+
   if (t != S32) {
     WARN("Tried to push S32 when next argument is %s from %s", ui_args_e2s_(t),
          msg->msg);
     return 1;
   }
+
   memcpy(msg->it, &val, sizeof(s32));
 
   msg->it += sizeof(s32);
@@ -351,7 +354,7 @@ extern s32 ui_msg_push_u32(msg_T msg, u32 val) {
   return 0;
 };
 
-extern void *ui_msg_arg_read(msg_T msg);
+//extern void *ui_msg_arg_read(msg_T msg);
 
 extern void ui_ipc_free() {
   struct map_T *map = ui_msg_browser_pull_m();

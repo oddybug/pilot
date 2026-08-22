@@ -163,12 +163,17 @@ void ui_resize_window(u32 width, u32 height) {
 struct map_T *ui_msg_browser_pull_m() {
   // CEF_REQUIRE_UI_THREAD(); TODO: look this up on google lmao i dont rememba
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  if (handler == nullptr) {
+    WARN("maguire");
+    return NULL;
+  }
   return handler->GetPullMsgMap();
 };
 
 struct map_T *ui_msg_render_pull_m() {
   // CEF_REQUIRE_UI_THREAD(); TODO: look this up on google lmao i dont rememba
-  CefRefPtr<MyRenderProcessHandler> handler = MyRenderProcessHandler::GetInstance();
+  CefRefPtr<MyRenderProcessHandler> handler =
+      MyRenderProcessHandler::GetInstance();
   return handler->GetPullMsgMap();
 };
 

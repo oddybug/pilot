@@ -35,8 +35,6 @@ static size_t ui_msg_pull_bm_size(u32 *n_entries) {
 
 msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
 
-  struct map_T *map = ui_msg_browser_pull_m();
-  gen_map_it_get_next(map, it);
   if (!(it->current && it->current))
     return NULL;
 
@@ -44,7 +42,7 @@ msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
   msg_map_T msg = ui_msg_map_create(it->current->key, &entry->in, &entry->out);
   int i = 0;
 
-  ui_msg_map_push_u32(msg, &entry->in.n_args);
+  //ui_msg_map_push_u32(msg, &entry->in.n_args);
   for (i = 0; i < entry->in.n_args; i++) {
     s32 at = entry->in.args[i];
     ui_msg_map_push_s32(msg, &at);
@@ -55,6 +53,9 @@ msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
     s32 at = entry->out.args[i];
     ui_msg_map_push_s32(msg, &at);
   }
+
+  struct map_T *map = ui_msg_browser_pull_m();
+  gen_map_it_get_next(map, it);
 
   return msg;
 };

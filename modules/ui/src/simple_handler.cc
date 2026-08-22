@@ -62,7 +62,7 @@ struct test {
   float test;
 };
 
-//extern msg_T ui_msg_create_(const c8 *name, struct args *args);
+// extern msg_T ui_msg_create_(const c8 *name, struct args *args);
 
 bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -80,19 +80,20 @@ bool SimpleHandler::OnProcessMessageReceived(
     frame->SendProcessMessage(PID_RENDERER, response);
     return true;
   } else if (message_name == "ipc_dicc_req") {
-    CefRefPtr<CefProcessMessage> response =
-        CefProcessMessage::Create("ipc_dicc_stream");
-    CefRefPtr<CefListValue> response_args = response->GetArgumentList();
 
-    struct map_it_T *it;
-    gen_map_it_set_begin(pull_msg_m_, it);
-    msg_map_T msg = ui_msg_pull_bm_e(it);
+    struct map_it_T it;
+    gen_map_it_set_begin(pull_msg_m_, &it);
+    msg_map_T msg = ui_msg_pull_bm_e(&it);
     while (msg) {
+      CefRefPtr<CefProcessMessage> response =
+          CefProcessMessage::Create("ipc_dicc_stream");
+      CefRefPtr<CefListValue> response_args = response->GetArgumentList();
       CefRefPtr<CefBinaryValue> cef_msg =
           CefBinaryValue::Create(ui_msg_map_bs(msg), ui_msg_map_size(msg));
       response_args->SetBinary(0, cef_msg);
-      ui_msg_map_free(msg);
       frame->SendProcessMessage(PID_RENDERER, response);
+      ui_msg_map_free(msg);
+      msg = ui_msg_pull_bm_e(&it);
     }
 
     // msg_T msg = ui_msg_bm();
@@ -105,20 +106,16 @@ bool SimpleHandler::OnProcessMessageReceived(
 
   } else if (message_name == "entry") {
 
-    // msg_T msg;
-
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
-    c8 *s_c[bs->GetSize()];
-    void *stream = (void *)s_c;
+    c8 sc[bs->GetSize()];
+    void *stream = (void *)sc;
+    bs->GetData(stream, bs->GetSize(), 0);
 
-    size_t read = bs->GetData(stream, bs->GetSize(), 0);
-
-    c8 *sc = (c8 *)stream;
     size_t key_s = strlen(sc) + sizeof(c8);
     c8 *key = (c8 *)malloc(key_s * sizeof(c8));
     strcpy(key, sc);
-    sc += key_s;
+
 
     struct pull_msg_e *e = (struct pull_msg_e *)gen_map_find(pull_msg_m_, key);
     if (!e) {
@@ -126,11 +123,13 @@ bool SimpleHandler::OnProcessMessageReceived(
       return false;
     }
 
+    INFO("handler");
     msg_T msg = ui_msg_get_fs(stream, &e->in);
     if (!msg) {
       WARN("msg couldnt get created");
       return false;
     }
+    INFO("handler");
 
     msg_T response = ui_msg_create_(key, &e->out);
     e->callback(msg, response);

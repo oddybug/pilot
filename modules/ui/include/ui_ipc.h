@@ -77,7 +77,7 @@ extern msg_T ui_msg_get_fs(void *stream, struct args *args);
 
 extern size_t ui_msg_size(msg_T msg);
 
-extern void *ui_msg_bitstream(msg_T msg);
+extern void* ui_msg_bitstream(msg_T msg);
 
 extern msg_T ui_msg_pull_create(const c8 *name);
 
@@ -95,20 +95,19 @@ extern s32 ui_msg_arg_read_s32(msg_T msg, s32 *val);
 
 extern s32 ui_msg_arg_read_u32(msg_T msg, u32 *val);
 
-extern void *ui_msg_arg_read(msg_T msg);
+//extern void* ui_msg_arg_read(msg_T msg);
 
 extern s32 ui_ipc_entry_add(const c8 *name,
                             void (*callback)(void *data,
                                              struct response_T *response),
                             struct args *in_args, struct args *out_args);
 
-
 extern struct map_T *ui_msg_render_pull_m();
 
 // extern s32 ui_msg_pull_send();
 
 // TODO: To implement
-//extern void ui_ipc_entry_rm(struct push_msg_e_render e);
+// extern void ui_ipc_entry_rm(struct push_msg_e_render e);
 
 extern void ui_ipc_free();
 

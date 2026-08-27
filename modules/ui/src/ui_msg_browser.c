@@ -13,7 +13,7 @@ s32 ui_msg_pull_new_entry(const c8 *name,
                           struct args *in, struct args *out) {
   assert(in && out && callback && name);
 
-  struct map_T *map = ui_msg_browser_pull_m();
+  map_T map = ui_msg_browser_pull_m();
   if (gen_map_find(map, name)) {
     WARN("entry already exists");
     return 2;
@@ -50,7 +50,7 @@ err_e:
 };
 
 msg_T ui_msg_pull_create(const c8 *name) {
-  struct map_T *map = ui_msg_browser_pull_m();
+  map_T map = ui_msg_browser_pull_m();
   struct pull_msg_bme *pme = gen_map_find(map, name);
   msg_T msg = ui_msg_create_(name, &pme->out);
   return msg;
@@ -77,7 +77,7 @@ msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
     ui_msg_map_push_s32(msg, &at);
   }
 
-  struct map_T *map = ui_msg_browser_pull_m();
+  map_T map = ui_msg_browser_pull_m();
   gen_map_it_get_next(map, it);
 
   return msg;

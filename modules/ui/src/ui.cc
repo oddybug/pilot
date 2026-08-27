@@ -14,7 +14,6 @@
 #include "log.h"
 #include "simple_app.h"
 #include "simple_handler.h"
-#include "ui_ipc.h"
 #include <cstdlib>
 
 s32 ui_start(int argc, char *argv[]) {
@@ -160,7 +159,7 @@ void ui_resize_window(u32 width, u32 height) {
   handler->ResizeBrowsers(width, height);
 };
 
-struct map_T *ui_msg_browser_pull_m() {
+map_T ui_msg_browser_pull_m() {
   // CEF_REQUIRE_UI_THREAD(); TODO: look this up on google lmao i dont rememba
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   if (handler == nullptr) {

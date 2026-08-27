@@ -65,7 +65,7 @@ err:
 };
 
 s32 ui_msg_pull_rm_add(void *stream, size_t size) {
-  struct map_T *map = ui_msg_render_pull_m();
+  map_T map = ui_msg_render_pull_m();
   if (!map)
     goto err;
 
@@ -97,7 +97,7 @@ err:
 extern msg_T ui_msg_create_(const c8 *name, struct args *args);
 
 msg_T ui_msg_pull_render_create(c8 *name) {
-  struct map_T *map = ui_msg_render_pull_m();
+  map_T map = ui_msg_render_pull_m();
   struct pull_msg_e_render *pme = gen_map_find(map, name);
   msg_T msg = ui_msg_create_(name, &pme->in);
   return msg;

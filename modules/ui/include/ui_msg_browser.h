@@ -34,6 +34,7 @@ extern msg_T ui_msg_pull_create(const c8 *name);
 extern msg_T ui_msg_push_create(const c8 *name);
 
 // extern void* ui_msg_pull_bm(size_t *size);
+extern map_T ui_msg_browser_pull_m();
 
 #ifdef __cplusplus
 }

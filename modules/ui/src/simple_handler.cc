@@ -378,7 +378,7 @@ void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
   }
 };
 
-struct map_T *SimpleHandler::GetPullMsgMap() { return pull_msg_m_; };
+map_T SimpleHandler::GetPullMsgMap() { return pull_msg_m_; };
 
 static void pilot_entry_free_entry_(struct pull_msg_bme *e);
 

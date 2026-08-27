@@ -66,12 +66,12 @@ public:
 
   void ResizeBrowsers(u32 width, u32 height);
 
-  struct map_T *GetPullMsgMap();
+  map_T GetPullMsgMap();
 
 private:
   void init_e_map();
-  struct map_T *pull_msg_m_;
-  struct map_T *push_msg_m_;
+  map_T pull_msg_m_;
+  map_T push_msg_m_;
   bool is_closed_ = false;
 
   std::map<std::string, CefRefPtr<CefFrame>> frames;

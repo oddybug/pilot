@@ -71,8 +71,10 @@ public:
 private:
   void init_e_map();
   struct map_T *pull_msg_m_;
+  struct map_T *push_msg_m_;
   bool is_closed_ = false;
 
+  std::map<std::string, CefRefPtr<CefFrame>> frames;
   u32 window_w = 0;
   u32 window_h = 0;
 

@@ -5,7 +5,7 @@
 #include "include/cef_app.h"
 #include "include/cef_v8.h"
 #include "include/cef_values.h"
-#include "ui_ipc.h"
+#include "ui_msg_common.h"
 #include <cstddef>
 #include <map>
 #include <string>
@@ -56,11 +56,14 @@ public:
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override;
-  struct map_T *GetPullMsgMap();
+  map_T GetPullMsgMap();
 
 private:
-  struct map_T *msg_pull_m_;
+  map_T msg_pull_m_;
   void init_msg_pull_m_();
+
+  map_T msg_push_m_;
+  void init_msg_push_m();
 
   bool CheckType(enum ARG_TYPE c_type, CefValueType js_type);
 
@@ -75,7 +78,9 @@ private:
 
   void PushArgument(CefV8ValueList &arguments, void *value, enum ARG_TYPE type);
 
-  CallbackMap callback_map_;
+  CallbackMap pull_callback_map_;
+  CallbackMap push_callback_map_;
+
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);
 };
 

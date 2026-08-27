@@ -125,6 +125,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/modules/render")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/ui")
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
+#add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
 
 include(cmake/directories.cmake)

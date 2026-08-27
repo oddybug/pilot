@@ -1,7 +1,6 @@
 #include "ui_msg_render.h"
 #include "data/hashmap.h"
 #include "log.h"
-#include "ui_ipc.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +8,8 @@ void ui_msg_pullme_free(struct pull_msg_e_render *e) {
   free(e->in.args);
   free(e->out.args);
 };
+
+// void ui_msg_pushme_free(struct pull_msg_e_render *e) { free(e->out.args); };
 
 static struct pull_msg_e_render *ui_msg_mce_render(msg_map_T msg) {
   struct pull_msg_e_render *entry = malloc(sizeof(struct pull_msg_e_render));
@@ -99,5 +100,10 @@ msg_T ui_msg_pull_render_create(c8 *name) {
   struct map_T *map = ui_msg_render_pull_m();
   struct pull_msg_e_render *pme = gen_map_find(map, name);
   msg_T msg = ui_msg_create_(name, &pme->in);
+  return msg;
+};
+
+msg_T ui_msg_push_request(const c8 *name, struct args *args) {
+  msg_T msg = ui_msg_create_(name, args);
   return msg;
 };

@@ -5,7 +5,8 @@
 #include "include/internal/cef_ptr.h"
 #include "include/internal/cef_string.h"
 #include "log.h"
-#include "ui_ipc.h"
+
+#include "ui_msg_common.h"
 #include "ui_msg_render.h"
 #include <cstring>
 #include <string>
@@ -23,51 +24,107 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
                           CefRefPtr<CefV8Value> &retval, CefString &exception) {
   // TODO: Theres two maps. it could be just one. Not quite but. To think
 
-  if (name == "setMessageCallback") {
+  CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+  if (!(context.get() && context->IsValid())) {
+    WARN("[INTERNAL ERROR] V8 context invalid");
+    return false;
+  }
+  if (!render_handler_.get()) {
+    WARN("[INTERNAL ERROR] render handler not initialized");
+    return false;
+  }
+
+  if (name == "PullMessage") {
     if (arguments.size() < 1) {
-      WARN("not enough arguments passed for 'setMessageCallback'");
+      WARN("not enough arguments passed for 'PullMessage'");
       return false;
-    } else if (!arguments[0]->IsString()) {
-      WARN("first argument of 'setMessageCallback' has to be a string "
+    }
+    if (!arguments[0]->IsString()) {
+      WARN("first argument of 'PullMessage' has to be a string "
            "identifier");
       return false;
     }
-    if (!render_handler_.get()) {
-      WARN("[INTERNAL ERROR] render handler not initialized");
-      return false;
-    }
 
-    // ------ find entry
     std::string message_name = arguments[0]->GetStringValue().ToString();
 
-    struct map_T *map = ui_msg_render_pull_m();
+    map_T map = ui_msg_render_pull_m();
     struct pull_msg_e_render *e;
     e = (struct pull_msg_e_render *)gen_map_find(map, message_name.c_str());
     if (!e) {
       ERROR("No call binded with key: %s", message_name.c_str());
       return false;
     }
-    // ------ Save context
-    CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
-
-    if (!(context.get() && context->IsValid())) {
-      WARN("[INTERNAL ERROR] V8 context invalid");
-      return false;
-    }
 
     s32 browser_id = context->GetBrowser()->GetIdentifier();
-
     MyRenderProcessHandler::CallbackKey key =
         std::make_pair(message_name, browser_id);
 
     context->Enter();
-    render_handler_->callback_map_[key] = std::make_pair(context, arguments[1]);
+    render_handler_->pull_callback_map_[key] =
+        std::make_pair(context, arguments[1]);
     context->Exit();
 
-    // ------  create message
     CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
         message_name.c_str(), e, ConvertV8ListToCefList(arguments));
     context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
+    return true;
+
+  } else if (name == "SetPushClbk") {
+
+    WARN("SetPushClbk");
+    if (arguments.size() < 1) {
+      WARN("not enough arguments passed for 'setPushClbk'");
+      return false;
+    }
+    if (!arguments[0]->IsString()) {
+      WARN("first argument of 'setPushClbk' has to be a string "
+           "identifier");
+      return false;
+    }
+    if (!arguments[1]->IsFunction()) {
+      WARN("Second argument of 'setPushClbk' has to be a callback function"
+           "identifier");
+      return false;
+    }
+
+    std::string message_name = arguments[0]->GetStringValue().ToString();
+
+    if (!gen_map_find(render_handler_->msg_push_m_,
+                      (void *)message_name.c_str())) {
+      WARN("Redefinition of push message: %s", message_name.c_str());
+      return false;
+    }
+
+    s32 browser_id = context->GetBrowser()->GetIdentifier();
+    MyRenderProcessHandler::CallbackKey key =
+        std::make_pair(message_name, browser_id);
+
+    context->Enter();
+    render_handler_->push_callback_map_[key] =
+        std::make_pair(context, arguments[1]);
+    context->Exit();
+
+    CefRefPtr<CefV8Value> func = arguments[1];
+    u32 f_args = 0;
+    CefRefPtr<CefV8Value> f_av = func->GetValue("length");
+    if (f_av) {
+      f_args = f_av->GetIntValue();
+    }
+    enum ARG_TYPE at = {U32};
+    struct args args = {.args = &at, .n_args = 1};
+    msg_T req = ui_msg_push_request(message_name.c_str(), &args);
+    ui_msg_push_u32(req, f_args);
+    CefRefPtr<CefBinaryValue> bs_req =
+        CefBinaryValue::Create(ui_msg_bitstream(req), ui_msg_size(req));
+
+    CefRefPtr<CefProcessMessage> cef_msg =
+        CefProcessMessage::Create("push_msg_req");
+    CefRefPtr<CefListValue> cef_args = cef_msg->GetArgumentList();
+    cef_args->SetBinary(0, bs_req);
+
+    context->GetFrame()->SendProcessMessage(PID_BROWSER, cef_msg);
+    ui_msg_free(req);
+
     return true;
   }
   return false;
@@ -156,18 +213,20 @@ void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   }
 
   CefRefPtr<CefV8Handler> v8_handler = new MyV8Handler(this);
-  CefRefPtr<CefV8Value> func =
-      CefV8Value::CreateFunction("setMessageCallback", v8_handler);
+  CefRefPtr<CefV8Value> pull_func =
+      CefV8Value::CreateFunction("PullMessage", v8_handler);
 
-  app->SetValue("setMessageCallback", func, V8_PROPERTY_ATTRIBUTE_NONE);
+  CefRefPtr<CefV8Value> push_func =
+      CefV8Value::CreateFunction("SetPushClbk", v8_handler);
+
+  app->SetValue("PullMessage", pull_func, V8_PROPERTY_ATTRIBUTE_NONE);
+  app->SetValue("SetPushClbk", push_func, V8_PROPERTY_ATTRIBUTE_NONE);
 
   context->Exit();
 
   CefRefPtr<CefProcessMessage> ipc_dicc_req =
       CefProcessMessage::Create("ipc_dicc_req");
   frame->SendProcessMessage(PID_BROWSER, ipc_dicc_req);
-
-  INFO("REACHED 1");
 }
 
 void SetList(CefRefPtr<CefListValue> source, CefRefPtr<CefV8Value> target) {
@@ -204,6 +263,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
 
+  bool handled = false;
   CefString message_name = message->GetName();
 
   if (message_name == "ipc_dicc_stream") {
@@ -214,12 +274,8 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     ui_msg_pull_rm_add(data, bin->GetSize());
 
     // ui_ipc_stream_insert(e_map_, data); DEPRECATED
-  };
-
-  bool handled = false;
-
-  if (message_name == "entry_response") {
-    if (!callback_map_.empty()) {
+  } else if (message_name == "entry_response") {
+    if (!pull_callback_map_.empty()) {
 
       CefRefPtr<CefListValue> args = message->GetArgumentList();
       CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
@@ -231,9 +287,9 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
       std::string en_s = en;
       CallbackKey key = std::make_pair(en_s, browser->GetIdentifier());
-      auto it = callback_map_.find(key);
+      auto it = pull_callback_map_.find(key);
 
-      if (it == callback_map_.end()) {
+      if (it == pull_callback_map_.end()) {
         WARN("No associated entry with name: %s", en);
         return false;
       }
@@ -265,20 +321,14 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
       CefV8ValueList arguments;
       for (u8 i = 0; i < e->out.n_args; i++) {
-        // TODO: pass directly the stream ui_ipc_stream_read_arg
-        // is wrong probably
-        // URGENT! THE VALUE IS INITIALIZED IN STACK WRONG SO WRONG
 
-        INFO("asdw");
-        s32 *value;
-        ui_msg_arg_read(msg, value);
+        s32 value;
+        ui_msg_arg_read(msg, &value);
 
         INFO("%d", e->out.args[i]);
-        INFO("asdw value: %d", *value);
-        PushArgument(arguments, value, e->out.args[i]);
+        INFO("asdw value: %d", value);
+        PushArgument(arguments, &value, e->out.args[i]);
       }
-
-      INFO("hola");
 
       // Execute callback
       CefRefPtr<CefV8Value> retval =
@@ -293,8 +343,63 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       }
 
       context->Exit();
-      callback_map_.erase(it);
+      pull_callback_map_.erase(it);
     }
+  } else if (message_name == "push_msg_req") {
+    CefRefPtr<CefBinaryValue> bs = message->GetArgumentList()->GetBinary(0);
+    bs->GetSize();
+    c8 sc[bs->GetSize()];
+    void *stream = (void *)sc;
+    bs->GetData(stream, bs->GetSize(), 0);
+
+    msg_T msg = ui_msg_get_fs_raw(stream, bs->GetSize());
+
+    c8 msg_name[strlen(sc) + 1];
+    ui_msg_read_string_r(msg, msg_name);
+
+    s32 valid;
+
+    CallbackKey key =
+        std::make_pair((std::string)msg_name, browser->GetIdentifier());
+    auto it = push_callback_map_.find(key);
+    if (it != push_callback_map_.end()) {
+      WARN("'%s' was not registered in the push callback map", msg_name);
+      return true;
+    }
+
+    ui_msg_read_s32_r(msg, &valid);
+    if (valid == -1) {
+      push_callback_map_.erase(it);
+      return true;
+    }
+    s32 n_args = valid;
+
+    struct args a;
+    enum ARG_TYPE *at = (enum ARG_TYPE *)malloc(sizeof(enum ARG_TYPE) * n_args);
+    if (!at) {
+      ERROR("failed to allocate memory");
+      return false;
+    }
+    s32 i;
+    for (i = 0; i < n_args; i++) {
+      enum ARG_TYPE et;
+      ui_msg_read_s32_r(msg, (s32 *)&et);
+      at[i] = et;
+    }
+    a.n_args = n_args;
+    a.args = at;
+
+    struct push_msg_e_render *pmsge =
+        (struct push_msg_e_render *)malloc(sizeof(struct push_msg_e_render));
+    if (!pmsge) {
+      ERROR("failed to allocate memory");
+      return false;
+    }
+
+    pmsge->out = a;
+    gen_map_insert(msg_push_m_, msg_name, pmsge);
+
+    return true;
   }
 
   return handled;
@@ -303,27 +408,41 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 void MyRenderProcessHandler::OnContextReleased(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefRefPtr<CefV8Context> context) {
-  for (auto it = callback_map_.begin(); it != callback_map_.end();) {
+  for (auto it = pull_callback_map_.begin(); it != pull_callback_map_.end();) {
     if (it->second.first->IsSame(context)) {
-      it = callback_map_.erase(it);
+      it = pull_callback_map_.erase(it);
     } else {
       ++it;
     }
   }
 }
 
-struct map_T *MyRenderProcessHandler::GetPullMsgMap() { return msg_pull_m_; };
+map_T MyRenderProcessHandler::GetPullMsgMap() { return msg_pull_m_; };
 
-static void pilot_entry_free_item_fn_(struct item_T *item);
+static void pilot_pull_entry_free_item_fn_(struct item_T *item);
 
-static void pilot_entry_free_item_fn_(struct item_T *item) {
+static void pilot_pull_entry_free_item_fn_(struct item_T *item) {
   struct pull_msg_e_render *value = (pull_msg_e_render *)item->value;
   ui_msg_pullme_free(value);
 };
 
+static void pilot_push_entry_free_item_fn_(struct item_T *item);
+
+static void pilot_push_entry_free_item_fn_(struct item_T *item) {
+  struct push_msg_e_render *value = (push_msg_e_render *)item->value;
+  ui_msg_pushme_free(value);
+};
+
 void MyRenderProcessHandler::init_msg_pull_m_() {
-  msg_pull_m_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p,
-                               gen_map_cmp_key_c8p, pilot_entry_free_item_fn_);
+  msg_pull_m_ =
+      gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
+                     pilot_pull_entry_free_item_fn_);
+};
+
+void MyRenderProcessHandler::init_msg_push_m() {
+  msg_push_m_ =
+      gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
+                     pilot_push_entry_free_item_fn_);
 };
 
 // TODO: A LOT OF MORE CHECKING IS NEEDED
@@ -480,7 +599,6 @@ void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments,
     arguments.push_back(CefV8Value::CreateUInt(*(u32 *)value));
     break;
   case S32:
-    INFO("yupie");
     arguments.push_back(CefV8Value::CreateInt(*(s32 *)value));
     break;
   default:

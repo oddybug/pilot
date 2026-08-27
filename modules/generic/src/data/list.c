@@ -6,14 +6,14 @@
 #include "data/list.h"
 #include "types.h"
 
-struct list_T {
-  struct node_T *first;
+struct list {
+  struct node *first;
   u32 size;
 };
 
-extern struct list_T *list_new() {
+list_T gen_list_new() {
 
-  struct list_T *list = calloc(1, sizeof(struct list_T));
+  list_T list = calloc(1, sizeof(struct list));
 
   if (!list) {
     fprintf(stderr, "Failed to allocate memory: %s", errno);
@@ -23,71 +23,62 @@ extern struct list_T *list_new() {
   return list;
 };
 
-extern void list_insert(struct list_T *list, struct node_T *node, void *value) {
-  // assert(list == NULL); TODO: ASSERTION
-  // assert(node == NULL); TODO: ASSERTION
+void gen_list_insert(list_T list, struct node *node, void *value) {
+  assert(list == NULL);
+  assert(node == NULL);
 
-  struct node_T *new = malloc(sizeof(struct node_T));
-
-  if (!new) {
-    fprintf(stderr, "Failed to allocate memory: %d", errno);
-    return;
-    // TODO: EXCEPTION
-  }
-
-  new->next = node->next;
-  new->value = value;
-  node->next = new;
-
-  list->size++;
-}
-
-extern void list_push_front(struct list_T *list, void *value) {
-  // assert(list == NULL); TODO: ASSERTION
-
-  struct node_T *new = malloc(sizeof(struct node_T));
+  struct node *new = malloc(sizeof(struct node));
 
   if (!new) {
     fprintf(stderr, "Failed to allocate memory: %d", errno);
     return;
-    // TODO: EXCEPTION
   }
 
-  new->value = value;
-
-  if (list->first == NULL) {
+  if (list->first == node) {
     list->first = new;
   } else {
-    new->next = list->first;
-    list->first = new;
+    struct node *prev = node->prev;
+    prev->next = new;
   }
+
+  new->next = node;
+  new->prev = node->prev;
+  new->value = value;
+  node->prev = new;
 
   list->size++;
 }
 
-extern void list_pop(struct list_T *list, struct node_T *node) {
-  // assert(list == NULL)
-  // assert(node == NULL)
+void gen_list_push_front(list_T list, void *value) {
+  gen_list_insert(list, list->first, value);
+}
 
-  if (node->next == NULL) {
-    free(list->first);
-    return;
+void gen_list_pop(struct list *list, struct node *node) {
+  assert(list == NULL);
+  assert(node == NULL);
+
+  struct node *prev = node->prev;
+  struct node *next = node->next;
+
+  if (!node->next) {
+    if (prev)
+      prev->next = NULL;
   }
 
-  struct node_T *next = node->next;
-  *node = *next;
+  if (!node->prev) {
+    if (next)
+      next->prev = NULL;
+  }
 
-  free(next);
+  if (next && prev) {
+    prev->next = next;
+    next->prev = prev;
+  }
+
+  free(node);
+  // TODO: free void* with callback (maybe)
 };
 
-extern void list_pop_front(struct list_T *list, void *value) {
-  // assert(list == NULL)
-  if (list->first == NULL) {
-    fprintf(stderr, "List already empty.");
-    return;
-  }
-
-  list->first = list->first->next;
-  free(list->first);
-  list->size--;
+void gen_list_pop_front(struct list *list) {
+	gen_list_pop(list, list->first);
 };

@@ -170,7 +170,7 @@ struct map_T *ui_msg_browser_pull_m() {
   return handler->GetPullMsgMap();
 };
 
-struct map_T *ui_msg_render_pull_m() {
+map_T ui_msg_render_pull_m() {
   // CEF_REQUIRE_UI_THREAD(); TODO: look this up on google lmao i dont rememba
   CefRefPtr<MyRenderProcessHandler> handler =
       MyRenderProcessHandler::GetInstance();

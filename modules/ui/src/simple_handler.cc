@@ -11,6 +11,7 @@
 
 #include "data/hashmap.h"
 #include "data/hashmap_helpers.h"
+#include "data/list.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
 #include "include/cef_parser.h"
@@ -20,8 +21,8 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 #include "log.h"
-#include "ui_ipc.h"
 #include "ui_msg_browser.h"
+#include "ui_msg_common.h"
 
 namespace {
 
@@ -71,15 +72,7 @@ bool SimpleHandler::OnProcessMessageReceived(
 
   const std::string message_name = message->GetName();
 
-  if (message_name == "binding_test") {
-    CefRefPtr<CefProcessMessage> response =
-        CefProcessMessage::Create("binding_test");
-    CefRefPtr<CefListValue> response_args = response->GetArgumentList();
-
-    response_args->SetString(0, "Hello from Browser Process C++!");
-    frame->SendProcessMessage(PID_RENDERER, response);
-    return true;
-  } else if (message_name == "ipc_dicc_req") {
+  if (message_name == "ipc_dicc_req") {
 
     struct map_it_T it;
     gen_map_it_set_begin(pull_msg_m_, &it);
@@ -95,15 +88,7 @@ bool SimpleHandler::OnProcessMessageReceived(
       ui_msg_map_free(msg);
       msg = ui_msg_pull_bm_e(&it);
     }
-
-    // msg_T msg = ui_msg_bm();
-    // void *args_bs = ui_ipc_stream_get();
-
-    // u32 size_n; //(dummi var)
-    // u32 size = ui_ipc_stream_get_size(&size_n);
-
     return true;
-
   } else if (message_name == "entry") {
 
     CefRefPtr<CefListValue> args = message->GetArgumentList();
@@ -116,20 +101,18 @@ bool SimpleHandler::OnProcessMessageReceived(
     c8 *key = (c8 *)malloc(key_s * sizeof(c8));
     strcpy(key, sc);
 
-
-    struct pull_msg_e *e = (struct pull_msg_e *)gen_map_find(pull_msg_m_, key);
+    struct pull_msg_bme *e =
+        (struct pull_msg_bme *)gen_map_find(pull_msg_m_, key);
     if (!e) {
       WARN("ipc call for '%s' does not exist", key);
       return false;
     }
 
-    INFO("handler");
     msg_T msg = ui_msg_get_fs(stream, &e->in);
     if (!msg) {
       WARN("msg couldnt get created");
       return false;
     }
-    INFO("handler");
 
     msg_T response = ui_msg_create_(key, &e->out);
     e->callback(msg, response);
@@ -151,6 +134,70 @@ bool SimpleHandler::OnProcessMessageReceived(
     free(msg);
     free(response);
     free(key);
+    return true;
+  } else if (message_name == "push_msg_req") {
+
+    CefRefPtr<CefProcessMessage> response =
+        CefProcessMessage::Create("push_msg_req");
+
+    CefRefPtr<CefBinaryValue> bs = message->GetArgumentList()->GetBinary(0);
+    bs->GetSize();
+    c8 sc[bs->GetSize()];
+    void *stream = (void *)sc;
+    bs->GetData(stream, bs->GetSize(), 0);
+
+    c8 msg_name[strlen(sc) + 1];
+    strcpy(msg_name, sc);
+
+    struct push_msg_bme *pmb =
+        (struct push_msg_bme *)gen_map_find(push_msg_m_, msg_name);
+
+    msg_T msg_res;
+    if (!pmb) {
+      WARN("No push msg entry with name: %d", msg_name);
+
+      enum ARG_TYPE a[] = {U32};
+      struct args args = {.args = a, .n_args = 1};
+
+      msg_res = ui_msg_create_(msg_name, &args);
+      s32 num = -1;
+      ui_msg_push_s32_r(msg_res, num);
+
+    } else {
+      // create entry
+      if (!pmb->render) {
+        pmb->render = gen_list_new();
+      }
+      s32 temp = 2;
+      std::string id_s = frame->GetIdentifier();
+      const c8 *id_c = id_s.c_str();
+      c8 id[id_s.size() + 1];
+      strcpy(id, id_c);
+      gen_list_push_front(pmb->render, id);
+
+      u32 msg_nargs = pmb->out.n_args + 1;
+      enum ARG_TYPE a[msg_nargs];
+      a[0] = S32;
+      int i;
+      for (i = 1; i < msg_nargs; i++)
+        a[i] = ARG_TYPE;
+      struct args args = {.args = a, .n_args = 1};
+      msg_res = ui_msg_create_(msg_name, &args);
+
+      ui_msg_push_s32_r(msg_res, pmb->out.n_args);
+      for (i = 0; i < pmb->out.n_args; i++)
+        ui_msg_push_s32_r(msg_res, (s32)ARG_TYPE);
+    }
+
+    CefRefPtr<CefListValue> args = response->GetArgumentList();
+    CefRefPtr<CefBinaryValue> res_bs =
+        CefBinaryValue::Create(ui_msg_bitstream(msg_res), ui_msg_size(msg_res));
+    args->SetBinary(0, res_bs);
+    frame->SendProcessMessage(PID_RENDERER, response);
+    std::string fid = frame->GetIdentifier();
+    frames[fid] = frame;
+
+    free(msg_res);
     return true;
   }
   return false;
@@ -333,9 +380,9 @@ void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
 
 struct map_T *SimpleHandler::GetPullMsgMap() { return pull_msg_m_; };
 
-static void pilot_entry_free_entry_(struct pull_msg_e *e);
+static void pilot_entry_free_entry_(struct pull_msg_bme *e);
 
-static void pilot_entry_free_entry_(struct pull_msg_e *e) {
+static void pilot_entry_free_entry_(struct pull_msg_bme *e) {
   free(e->in.args);
   free(e->out.args);
 };
@@ -343,7 +390,7 @@ static void pilot_entry_free_entry_(struct pull_msg_e *e) {
 static void pilot_entry_free_item_fn_(struct item_T *item);
 
 static void pilot_entry_free_item_fn_(struct item_T *item) {
-  struct pull_msg_e *value = (pull_msg_e *)item->value;
+  struct pull_msg_bme *value = (pull_msg_bme *)item->value;
   pilot_entry_free_entry_(value);
 };
 

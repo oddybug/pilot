@@ -5,7 +5,7 @@
 #include "data/hashmap.h"
 #include "log.h"
 
-struct map_T {
+struct map {
   u32 b_num;
   struct item_T **bucket;
 
@@ -14,9 +14,9 @@ struct map_T {
   void (*free_item)(struct item_T *item);
 };
 
-static void gen_map_free_item_(struct map_T *map, struct item_T *item);
+static void gen_map_free_item_(map_T map, struct item_T *item);
 
-static void gen_map_free_item_(struct map_T *map, struct item_T *item) {
+static void gen_map_free_item_(map_T map, struct item_T *item) {
   if (map->free_item)
     map->free_item(item);
 
@@ -25,9 +25,9 @@ static void gen_map_free_item_(struct map_T *map, struct item_T *item) {
   free(item);
 };
 
-struct map_T *gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
-                             u32 (*cmp_fn)(const void *a, const void *b),
-                             void (*free_item)(struct item_T *item)) {
+map_T gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
+                     u32 (*cmp_fn)(const void *a, const void *b),
+                     void (*free_item)(struct item_T *item)) {
 
   struct item_T **bucket = calloc(1, size * sizeof(struct item_T *));
 
@@ -37,7 +37,7 @@ struct map_T *gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
     return NULL;
   };
 
-  struct map_T *res = malloc(sizeof(struct map_T));
+  map_T res = malloc(sizeof(struct map));
 
   res->bucket = bucket;
   res->b_num = size;
@@ -53,9 +53,9 @@ struct map_T *gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
  * @param item
  * @return 0 on succes 1 otherwise.
  */
-static s32 gen_map_free_bucket_row_(struct map_T *map, struct item_T *item);
+static s32 gen_map_free_bucket_row_(map_T map, struct item_T *item);
 
-static s32 gen_map_free_bucket_row_(struct map_T *map, struct item_T *item) {
+static s32 gen_map_free_bucket_row_(map_T map, struct item_T *item) {
   assert(item);
 
   if (!item) {
@@ -73,7 +73,7 @@ static s32 gen_map_free_bucket_row_(struct map_T *map, struct item_T *item) {
   return 0;
 };
 
-s32 gen_map_free(struct map_T *map) {
+s32 gen_map_free(map_T map) {
   assert(map && map->bucket);
 
   if (!map) {
@@ -100,7 +100,7 @@ s32 gen_map_free(struct map_T *map) {
   return 0;
 };
 
-s32 gen_map_get_size(struct map_T *map) {
+s32 gen_map_get_size(map_T map) {
   assert(map);
   if (!map) {
     ERROR("can acces the size of a NULL map");
@@ -109,7 +109,7 @@ s32 gen_map_get_size(struct map_T *map) {
   return map->b_num;
 };
 
-s32 gen_map_insert(struct map_T *map, const void *key, void *value) {
+s32 gen_map_insert(map_T map, const void *key, void *value) {
   assert(key && map);
   if (!map || !key) {
     ERROR("map or key NULL.");
@@ -143,7 +143,7 @@ s32 gen_map_insert(struct map_T *map, const void *key, void *value) {
   return 0;
 }
 
-s32 gen_map_remove(struct map_T *map, const void *key) {
+s32 gen_map_remove(map_T map, const void *key) {
   assert(map && key);
 
   if (!map || !key) {
@@ -176,7 +176,7 @@ s32 gen_map_remove(struct map_T *map, const void *key) {
   return 1;
 }
 
-extern void *gen_map_find(struct map_T *map, const void *key) {
+extern void *gen_map_find(map_T map, const void *key) {
   assert(map && key);
 
   u32 hash = map->hash_fn(key);
@@ -206,9 +206,9 @@ extern void *gen_map_find(struct map_T *map, const void *key) {
  * @result 'it->current' and 'it->index' update to the next item_T. If no
  * further elements exist, `it->current` will be set to NULL.
  */
-static void gen_map_it_get_next_(struct map_T *map, struct map_it_T *it);
+static void gen_map_it_get_next_(map_T map, struct map_it_T *it);
 
-static void gen_map_it_get_next_(struct map_T *map, struct map_it_T *it) {
+static void gen_map_it_get_next_(map_T map, struct map_it_T *it) {
   assert(map && it);
 
   if (it->index >= map->b_num - 1) {
@@ -229,7 +229,7 @@ static void gen_map_it_get_next_(struct map_T *map, struct map_it_T *it) {
   }
 };
 
-s32 gen_map_it_is_end(struct map_T *map, struct map_it_T *it) {
+s32 gen_map_it_is_end(map_T map, struct map_it_T *it) {
   assert(map && it);
   if (map->b_num - 1 >= it->index && it->current == NULL)
     return 1;
@@ -237,7 +237,7 @@ s32 gen_map_it_is_end(struct map_T *map, struct map_it_T *it) {
     return 0;
 };
 
-void gen_map_it_set_begin(struct map_T *map, struct map_it_T *it) {
+void gen_map_it_set_begin(map_T map, struct map_it_T *it) {
   assert(map && it);
   it->current = map->bucket[0];
   it->index = 0;
@@ -245,7 +245,7 @@ void gen_map_it_set_begin(struct map_T *map, struct map_it_T *it) {
     gen_map_it_get_next_(map, it);
 };
 
-void gen_map_it_get_next(struct map_T *map, struct map_it_T *it) {
+void gen_map_it_get_next(map_T map, struct map_it_T *it) {
   assert(map && it);
   gen_map_it_get_next_(map, it);
 };

@@ -254,18 +254,29 @@ int main(int argc, char *argv[]) {
   }
 
   set_ipc_calls();
-
   ui_set_ui_texture_callback(&ui_texture_clbk);
+  ui_resize_window(1280, 720);
 
   iom_init();
-  ui_resize_window(1280, 720);
+  create_targets();
+
+  // start_ui
+  //
+  // signal UI started correctly
+  // initialize messages
+  //
+  // then start iom
+  //
+  // start rm
+  //
+  // main loop
+  //
+  // free
 
   struct rect_T rect = {.x = 0, .y = 0, .w = 400, .h = 400};
   ren_set_viewport(rect);
-
   ren_init();
 
-  create_targets();
   // iom_set_event_callback(sdl_callback);
   start_camera();
 

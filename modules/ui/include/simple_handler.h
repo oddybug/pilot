@@ -7,8 +7,10 @@
 
 #include <list>
 
+#include "data/list.h"
 #include "include/cef_client.h"
 #include "include/cef_render_handler.h"
+#include "ui_msg_common.h"
 
 #include "types.h"
 
@@ -67,6 +69,10 @@ public:
   void ResizeBrowsers(u32 width, u32 height);
 
   map_T GetPullMsgMap();
+
+  map_T GetPushMsgMap();
+
+  void SendPushMsg(list_T list, msg_T msg);
 
 private:
   void init_e_map();

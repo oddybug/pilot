@@ -2,7 +2,9 @@
 #include "SDL3/SDL_mouse.h"
 
 #include "ui.h"
-#include "ui_ipc.h"
+#include "ui_msg_browser.h"
+#include "ui_msg_common.h"
+
 #include <cstring>
 
 extern "C" {
@@ -113,6 +115,8 @@ c16 sdl_key_to_c16(SDL_Keycode key, SDL_Keymod mod) {
   }
 }
 
+void send_push_message();
+
 void ipc_test_fnc(msg_T msg, msg_T response) {
   s32 num;
   ui_msg_arg_read_s32(msg, &num);
@@ -121,6 +125,9 @@ void ipc_test_fnc(msg_T msg, msg_T response) {
 
   int result = 23;
   ui_msg_push_s32(response, result);
+
+
+  send_push_message();
   // ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);
 };
 
@@ -134,6 +141,17 @@ void set_ipc_calls() {
   ui_msg_pull_new_entry("onecall", ipc_test_fnc, &args_i, &args_o);
 
   INFO("SUCCESFULL ENTRY ADDED");
+
+  ui_msg_push_new_entry("hello", &args_o);
+}
+
+void send_push_message() {
+  msg_T msg = ui_msg_push_create("hello");
+  if (!msg) {
+    return;
+  }
+  ui_msg_push_s32(msg, 2);
+  ui_msg_push_send(msg);
 }
 
 void sdl_gl_callback(SDL_Event *e) {}

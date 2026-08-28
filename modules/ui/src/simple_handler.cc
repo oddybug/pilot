@@ -153,6 +153,7 @@ bool SimpleHandler::OnProcessMessageReceived(
         (struct push_msg_bme *)gen_map_find(push_msg_m_, msg_name);
 
     msg_T msg_res;
+    s32 msg_s;
     if (!pmb) {
       WARN("No push msg entry with name: %d", msg_name);
 
@@ -163,15 +164,19 @@ bool SimpleHandler::OnProcessMessageReceived(
       s32 num = -1;
       ui_msg_push_s32_r(msg_res, num);
 
+      msg_s = ui_msg_size(msg_res);
     } else {
       // create entry
       if (!pmb->render) {
         pmb->render = gen_list_new();
       }
-      s32 temp = 2;
       std::string id_s = frame->GetIdentifier();
       const c8 *id_c = id_s.c_str();
-      c8 id[id_s.size() + 1];
+      c8 *id = (c8 *)malloc(id_s.size() + 1);
+      if (!id) {
+        ERROR("failed to allocate memory. errno: %d", errno);
+        return false;
+      }
       strcpy(id, id_c);
       gen_list_push_front(pmb->render, id);
 
@@ -181,17 +186,19 @@ bool SimpleHandler::OnProcessMessageReceived(
       int i;
       for (i = 1; i < msg_nargs; i++)
         a[i] = ARG_TYPE;
-      struct args args = {.args = a, .n_args = 1};
+      struct args args = {.args = a, .n_args = msg_nargs};
       msg_res = ui_msg_create_(msg_name, &args);
 
       ui_msg_push_s32_r(msg_res, pmb->out.n_args);
       for (i = 0; i < pmb->out.n_args; i++)
         ui_msg_push_s32_r(msg_res, (s32)ARG_TYPE);
+
+      msg_s = ui_msg_size(msg_res);
     }
 
     CefRefPtr<CefListValue> args = response->GetArgumentList();
     CefRefPtr<CefBinaryValue> res_bs =
-        CefBinaryValue::Create(ui_msg_bitstream(msg_res), ui_msg_size(msg_res));
+        CefBinaryValue::Create(ui_msg_bitstream(msg_res), msg_s);
     args->SetBinary(0, res_bs);
     frame->SendProcessMessage(PID_RENDERER, response);
     std::string fid = frame->GetIdentifier();
@@ -380,24 +387,46 @@ void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
 
 map_T SimpleHandler::GetPullMsgMap() { return pull_msg_m_; };
 
-static void pilot_entry_free_entry_(struct pull_msg_bme *e);
+map_T SimpleHandler::GetPushMsgMap() { return push_msg_m_; };
 
-static void pilot_entry_free_entry_(struct pull_msg_bme *e) {
-  free(e->in.args);
-  free(e->out.args);
-};
+void SimpleHandler::SendPushMsg(list_T list, msg_T msg) {
+  assert(list && msg);
+  // gen_list_find(list , const void *key)
+  struct node *n = gen_list_first(list);
+  if (!n)
+    return;
 
-static void pilot_entry_free_item_fn_(struct item_T *item);
+  while (n) {
+    c8 name[strlen((c8 *)n->value) + 1];
+    std::string id = (c8 *)n->value;
+    auto it = frames.find(id);
 
-static void pilot_entry_free_item_fn_(struct item_T *item) {
-  struct pull_msg_bme *value = (pull_msg_bme *)item->value;
-  pilot_entry_free_entry_(value);
+    if (it == frames.end()) {
+      ERROR("Frame not found %s", name);
+      break;
+    }
+
+    CefRefPtr<CefFrame> frame = it->second;
+    // TODO: I DONT KNOW IF BS CAN BE OUT OF THE LOOP TO TRY
+    CefRefPtr<CefBinaryValue> bs =
+        CefBinaryValue::Create(ui_msg_bitstream(msg), ui_msg_size(msg));
+    CefRefPtr<CefProcessMessage> cef_msg =
+        CefProcessMessage::Create("push_msg");
+    cef_msg->GetArgumentList()->SetBinary(0, bs);
+
+    frame->SendProcessMessage(PID_RENDERER, cef_msg);
+    frames[id];
+
+    n = n->next;
+  }
 };
 
 void SimpleHandler::init_e_map() {
-
   pull_msg_m_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p,
-                               gen_map_cmp_key_c8p, pilot_entry_free_item_fn_);
+                               gen_map_cmp_key_c8p, ui_msg_pullem_free_clbk_);
+
+  push_msg_m_ = gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p,
+                               gen_map_cmp_key_c8p, ui_msg_pushem_free_clbk_);
 };
 
 // TODO: to implement

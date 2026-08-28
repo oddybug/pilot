@@ -1,15 +1,19 @@
 #include "ui_msg_render.h"
-#include "data/hashmap.h"
-#include "log.h"
+
 #include <stdlib.h>
 #include <string.h>
+
+#include "data/hashmap.h"
+
+#include "log.h"
+#include "ui.h"
 
 void ui_msg_pullme_free(struct pull_msg_e_render *e) {
   free(e->in.args);
   free(e->out.args);
 };
 
-// void ui_msg_pushme_free(struct pull_msg_e_render *e) { free(e->out.args); };
+void ui_msg_pushme_free(struct push_msg_e_render *e) { free(e->out.args); };
 
 static struct pull_msg_e_render *ui_msg_mce_render(msg_map_T msg) {
   struct pull_msg_e_render *entry = malloc(sizeof(struct pull_msg_e_render));

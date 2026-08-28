@@ -10,6 +10,8 @@
 
 #include "data/hashmap.h"
 #include "log.h"
+#include "ui.h"
+#include "ui_msg_browser.h"
 
 struct msg {
   struct args *args;
@@ -218,6 +220,18 @@ extern size_t ui_msg_size(msg_T msg) {
 
 extern void *ui_msg_bitstream(msg_T msg) { return msg->msg; };
 
+extern msg_T ui_msg_push_create(const c8 *name) {
+  map_T map = ui_msg_browser_push_m();
+  struct push_msg_bme *pmbme = (struct push_msg_bme *)gen_map_find(map, name);
+  if (!pmbme) {
+    WARN("'%s' is not registered.", name);
+    return NULL;
+  }
+
+  msg_T msg = ui_msg_create_(name, &pmbme->out);
+  return msg;
+};
+
 s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
   assert(msg);
   assert(msg->msg);
@@ -234,6 +248,7 @@ s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
   }
 
   memcpy(val, msg->it, sizeof(s32));
+  INFO("number: %d value: %d", *(s32 *)msg->it, *(s32 *)val);
   msg->it += sizeof(s32);
   msg->i++;
   return 0;
@@ -259,14 +274,16 @@ s32 ui_msg_arg_read_u32(msg_T msg, u32 *val) {
 
 void ui_msg_arg_read(msg_T msg, void *val) {
   switch (msg->args->args[msg->i]) {
-  S32: {
-    ui_msg_arg_read_s32(msg, val);
-    break;
-  }
-  U32: {
-    ui_msg_arg_read_u32(msg, val);
-    break;
-  }
+  S32:
+    {
+      ui_msg_arg_read_s32(msg, val);
+      break;
+    }
+  U32:
+    {
+      ui_msg_arg_read_u32(msg, val);
+      break;
+    }
   ARG_TYPE:
     break;
   default:
@@ -280,6 +297,8 @@ extern void ui_msg_free(msg_T msg) {
   free(msg->msg);
   free(msg);
 };
+
+extern void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->msg); };
 
 s32 ui_msg_push_s32(msg_T msg, s32 val) {
   if (msg->i > msg->args->n_args) {

@@ -30,7 +30,6 @@ msg_T ui_msg_push_request(const c8 *name, struct args *args);
 
 extern void ui_msg_arg_read(msg_T msg, void *val);
 
-extern map_T ui_msg_render_pull_m();
 
 #ifdef __cplusplus
 }

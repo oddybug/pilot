@@ -21,20 +21,29 @@ struct push_msg_bme {
   struct args out;
 };
 
+extern void ui_msg_pullem_free_clbk_(struct item_T *item);
+
+extern void ui_msg_pullem_free(struct pull_msg_bme *e);
+
+extern void ui_msg_pushem_free_clbk_(struct item_T *item);
+
+extern void ui_msg_pushem_free(struct push_msg_bme *e);
+
 extern s32 ui_msg_pull_new_entry(const c8 *name,
                                  void (*callback)(msg_T msg, msg_T response),
                                  struct args *in, struct args *out);
+
+extern s32 ui_msg_push_new_entry(const c8 *name, struct args *out);
 
 extern msg_map_T ui_msg_pull_bm_e(struct map_it_T *it);
 
 extern msg_map_T ui_msg_push_bm_e(struct map_it_T *it);
 
-extern msg_T ui_msg_pull_create(const c8 *name);
+//extern msg_T ui_msg_pull_create(const c8 *name);
 
-extern msg_T ui_msg_push_create(const c8 *name);
+//extern msg_T ui_msg_push_create(const c8 *name);
 
 // extern void* ui_msg_pull_bm(size_t *size);
-extern map_T ui_msg_browser_pull_m();
 
 #ifdef __cplusplus
 }

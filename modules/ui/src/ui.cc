@@ -4,9 +4,10 @@
 
 #include "ui.h"
 
+#include "data/hashmap.h"
+#include "data/list.h"
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
-#include "include/cef_task.h"
 #include "include/internal/cef_ptr.h"
 #include "include/internal/cef_types.h"
 #include "include/internal/cef_types_wrappers.h"
@@ -14,7 +15,10 @@
 #include "log.h"
 #include "simple_app.h"
 #include "simple_handler.h"
+#include "ui_msg_browser.h"
+#include "ui_msg_common.h"
 #include <cstdlib>
+#include <cstring>
 
 s32 ui_start(int argc, char *argv[]) {
   // Create a copy of |argv| on Linux because Chromium mangles the value
@@ -159,13 +163,20 @@ void ui_resize_window(u32 width, u32 height) {
   handler->ResizeBrowsers(width, height);
 };
 
+map_T ui_msg_browser_push_m() {
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  if (handler == nullptr)
+    return NULL;
+
+  return handler->GetPushMsgMap();
+};
+
 map_T ui_msg_browser_pull_m() {
   // CEF_REQUIRE_UI_THREAD(); TODO: look this up on google lmao i dont rememba
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
-  if (handler == nullptr) {
-    WARN("maguire");
+  if (handler == nullptr)
     return NULL;
-  }
+
   return handler->GetPullMsgMap();
 };
 
@@ -174,6 +185,37 @@ map_T ui_msg_render_pull_m() {
   CefRefPtr<MyRenderProcessHandler> handler =
       MyRenderProcessHandler::GetInstance();
   return handler->GetPullMsgMap();
+};
+
+s32 ui_msg_push_send(msg_T msg) {
+  if (!msg) {
+    return -1;
+  }
+
+  // Browser handler send
+  c8 *s = (c8 *)ui_msg_bitstream(msg);
+  c8 name[strlen(s) + 1];
+  strcpy(name, s);
+
+  map_T map = ui_msg_browser_push_m();
+  struct push_msg_bme *bme = (struct push_msg_bme *)gen_map_find(map, name);
+  if (!bme) {
+    WARN("'%s' is not registered.", name);
+    return -2;
+  }
+  // bme->render
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  if (handler == nullptr)
+    return -3;
+  list_T l = bme->render;
+
+  if (!l) {
+
+    WARN("No js registred this call '%s'.", name);
+    return -4;
+  }
+  handler->SendPushMsg(l, msg);
+  return 0;
 };
 
 void ui_close() {

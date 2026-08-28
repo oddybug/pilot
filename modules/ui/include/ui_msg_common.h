@@ -72,6 +72,8 @@ extern msg_T ui_msg_push_create(const c8 *name);
 
 extern void ui_msg_free(msg_T msg);
 
+extern void ui_msg_cpy_name(msg_T msg, c8 *name);
+
 extern s32 ui_msg_push_s32(msg_T msg, s32 val);
 
 extern s32 ui_msg_push_u32(msg_T msg, u32 val);

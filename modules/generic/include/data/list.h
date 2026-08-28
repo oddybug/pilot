@@ -7,6 +7,8 @@ extern "C" {
 
 typedef struct list *list_T;
 
+#include "types.h"
+
 struct node {
   struct node *next;
   struct node *prev;
@@ -27,12 +29,27 @@ extern void gen_list_push_front(list_T list, void *value);
 extern void gen_list_pop(list_T list, struct node *node);
 
 // nf -> no_free
-//extern void list_pop_nf(list_T list, struct node *node);
+// extern void list_pop_nf(list_T list, struct node *node);
 
 extern void gen_list_pop_front(list_T list);
 
+extern struct node* gen_list_first(list_T list);
+
+/**
+ * @brief Find the node with value 'value'
+ *
+ * @param list
+ * @param value
+ * @param cpm_fn callback function that must provide 1 on a == b and 0
+ * otherwise
+ * @return return a pointer to the node holding the value or NULL if value not
+ * found in list
+ */
+extern struct node *gen_list_find(list_T list, void *value,
+                           s32 (*cpm_fn)(void *a, void *b));
+
 // nf -> no_free
-//extern void list_pop_front_nf(list_T list);
+// extern void list_pop_front_nf(list_T list);
 
 // extern list_T list_new(void);
 

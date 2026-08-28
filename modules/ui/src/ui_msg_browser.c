@@ -1,12 +1,36 @@
-
 #include "ui_msg_browser.h"
-#include "data/hashmap.h"
-#include "log.h"
-#include "ui_msg_common.h"
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "ui.h"
+#include "ui_msg_common.h"
+
+#include "data/hashmap.h"
+#include "log.h"
+
+void ui_msg_pullem_free_clbk_(struct item_T *item) {
+  struct pull_msg_bme *value = item->value;
+  ui_msg_pullem_free(value);
+};
+
+void ui_msg_pullem_free(struct pull_msg_bme *e) {
+  free(e->out.args);
+  free(e->in.args);
+};
+
+void ui_msg_pushem_free(struct push_msg_bme *e) {
+  // TODO: URGENT FREE LIST
+  // gen_list_free(e->list);
+  free(e->out.args);
+};
+
+void ui_msg_pushem_free_clbk_(struct item_T *item) {
+
+  struct push_msg_bme *value = item->value;
+  ui_msg_pushem_free(value);
+};
 
 s32 ui_msg_pull_new_entry(const c8 *name,
                           void (*callback)(msg_T msg, msg_T response),
@@ -43,6 +67,38 @@ s32 ui_msg_pull_new_entry(const c8 *name,
 err_out:
   free(in_cpy);
 err_in:
+  free(e_c);
+err_e:
+  WARN("failed to allocate memory for new entry");
+  return 1;
+};
+
+extern s32 ui_msg_push_new_entry(const c8 *name, struct args *out) {
+  assert(out && name);
+
+  map_T map = ui_msg_browser_push_m();
+  if (gen_map_find(map, name)) {
+    // USER WARN
+    WARN("entry already exists");
+    return 2;
+  }
+
+  struct push_msg_bme *e_c = malloc(sizeof(struct push_msg_bme));
+  if (!e_c)
+    goto err_e;
+
+  enum ARG_TYPE *out_cpy = malloc(sizeof(enum ARG_TYPE) * out->n_args);
+  if (!out_cpy)
+    goto err_out;
+  memcpy(out_cpy, out->args, sizeof(*out_cpy) * out->n_args);
+
+  e_c->out = (struct args){.args = out_cpy, .n_args = out->n_args};
+  e_c->render = NULL;
+
+  gen_map_insert(map, name, e_c);
+  return 0;
+
+err_out:
   free(e_c);
 err_e:
   WARN("failed to allocate memory for new entry");

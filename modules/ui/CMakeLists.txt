@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CEFSIMPLE_SRCS
     src/simple_app.cc
     src/ui.cc
-    src/ui_ipc.c
+    src/ui_msg_common.c
     src/ui_msg_render.c
     src/ui_msg_browser.c
     include/simple_app.h

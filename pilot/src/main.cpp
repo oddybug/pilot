@@ -121,11 +121,9 @@ void ipc_test_fnc(msg_T msg, msg_T response) {
   s32 num;
   ui_msg_arg_read_s32(msg, &num);
   INFO("Number: %d", num);
-  INFO("key clbk: %s", ui_msg_bitstream(msg));
 
-  int result = 23;
+  s32 result = 999;
   ui_msg_push_s32(response, result);
-
 
   send_push_message();
   // ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);

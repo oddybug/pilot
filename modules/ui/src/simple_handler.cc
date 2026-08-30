@@ -184,14 +184,15 @@ bool SimpleHandler::OnProcessMessageReceived(
       enum ARG_TYPE a[msg_nargs];
       a[0] = S32;
       int i;
-      for (i = 1; i < msg_nargs; i++)
+      for (i = 1; i < msg_nargs; i++) {
         a[i] = ARG_TYPE;
+      }
       struct args args = {.args = a, .n_args = msg_nargs};
       msg_res = ui_msg_create_(msg_name, &args);
 
       ui_msg_push_s32_r(msg_res, pmb->out.n_args);
       for (i = 0; i < pmb->out.n_args; i++)
-        ui_msg_push_s32_r(msg_res, (s32)ARG_TYPE);
+        ui_msg_push_s32_r(msg_res, (s32)pmb->out.args[i]);
 
       msg_s = ui_msg_size(msg_res);
     }

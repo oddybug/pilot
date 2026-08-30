@@ -76,7 +76,7 @@ private:
 
   void CopyValueToStream(CefRefPtr<CefValue> &value, msg_T msg);
 
-  void PushArgument(CefV8ValueList &arguments, void *value, enum ARG_TYPE type);
+  void PushArgument(CefV8ValueList &arguments, msg_T msg, enum ARG_TYPE type);
 
   CallbackMap pull_callback_map_;
   CallbackMap push_callback_map_;

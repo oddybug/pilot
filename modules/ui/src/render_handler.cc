@@ -74,7 +74,6 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     return true;
 
   } else if (name == "SetPushClbk") {
-    INFO("SetPushClbk");
     if (arguments.size() < 2) {
       WARN("not enough arguments passed for 'setPushClbk'");
       return false;
@@ -91,7 +90,6 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     }
 
     std::string message_name = arguments[0]->GetStringValue().ToString();
-    ERROR("message_name");
 
     if (gen_map_find(render_handler_->msg_push_m_,
                      (void *)message_name.c_str())) {
@@ -102,7 +100,6 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     s32 browser_id = context->GetBrowser()->GetIdentifier();
     MyRenderProcessHandler::CallbackKey key =
         std::make_pair(message_name, browser_id);
-    ERROR("MAP KEY: %s - %d", key.first.c_str(), key.second);
 
     context->Enter();
     render_handler_->push_callback_map_[key] =
@@ -286,7 +283,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
-    INFO("data_size: %d", bs->GetSize());
     void *stream = (void *)bs->GetRawData();
     c8 *sc = (c8 *)stream;
     c8 en[strlen(sc) + 1];
@@ -318,23 +314,18 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     }
 
     struct args out_args = e->out;
-    msg_T msg = ui_msg_get_fs(en, &out_args);
+    msg_T msg = ui_msg_get_fs(stream, &out_args);
 
     CefRefPtr<CefV8Value> callback = it->second.second;
 
     if (!(callback.get() && callback->IsValid())) {
-      return false; // handled = false;
+      return false;
     }
 
     CefV8ValueList arguments;
     for (u8 i = 0; i < e->out.n_args; i++) {
-
-      s32 value;
-      ui_msg_arg_read(msg, &value);
-
-      INFO("%d", e->out.args[i]);
-      INFO("asdw value: %d", value);
-      PushArgument(arguments, &value, e->out.args[i]);
+      WARN("IS THIS CALLING");
+      PushArgument(arguments, msg, e->out.args[i]);
     }
 
     // Execute callback
@@ -342,8 +333,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
         callback->ExecuteFunction(nullptr, arguments);
 
     if (retval.get() && retval->IsBool()) {
-
-      INFO("RETURN VALUE: %d", retval->GetBoolValue());
       handled = retval->GetBoolValue();
     } else {
       handled = true;
@@ -372,7 +361,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     std::string m_s = msg_name;
     CallbackKey key = std::make_pair(msg_name, browser->GetIdentifier());
 
-    INFO("IT ENTRY NAME %s - %d", key.first.c_str(), key.second);
     auto it = push_callback_map_.find(key);
     if (it == push_callback_map_.end()) {
       WARN("'%s' was not registered in the push callback map", msg_name);
@@ -385,7 +373,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       return true;
     }
     s32 n_args = valid;
-    INFO("n_args: push %d", valid);
 
     struct args a;
     enum ARG_TYPE *at = (enum ARG_TYPE *)malloc(sizeof(enum ARG_TYPE) * n_args);
@@ -409,8 +396,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       return false;
     }
 
-    INFO("INSERTED");
-
     pmsge->out = a;
     gen_map_insert(msg_push_m_, msg_name, pmsge);
 
@@ -421,7 +406,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
     CefRefPtr<CefListValue> args = message->GetArgumentList();
     CefRefPtr<CefBinaryValue> bs = args->GetBinary(0);
-    INFO("data_size: %d", bs->GetSize());
     void *stream = (void *)bs->GetRawData();
     c8 *sc = (c8 *)stream;
     c8 en[strlen(sc) + 1];
@@ -453,8 +437,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     }
 
     struct args out_args = e->out;
-    WARN("out args; %d", out_args.n_args);
-    msg_T msg = ui_msg_get_fs(en, &out_args);
+    msg_T msg = ui_msg_get_fs(stream, &out_args);
 
     CefRefPtr<CefV8Value> callback = it->second.second;
 
@@ -462,27 +445,16 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       return false; // handled = false;
     }
 
-    WARN("HOLA");
     CefV8ValueList arguments;
     for (u8 i = 0; i < e->out.n_args; i++) {
-
-      // WRONG SO WRONG
-      s32 value[1];
-      ui_msg_arg_read(msg, value);
-
-      INFO("%d", e->out.args[i]);
-      INFO("herewebo: %d", value);
-      PushArgument(arguments, &value, e->out.args[i]);
+      PushArgument(arguments, msg, e->out.args[i]);
     }
 
-    WARN("HOLA");
     // Execute callback
     CefRefPtr<CefV8Value> retval =
         callback->ExecuteFunction(nullptr, arguments);
 
     if (retval.get() && retval->IsBool()) {
-
-      INFO("RETURN VALUE: %d", retval->GetBoolValue());
       handled = retval->GetBoolValue();
     } else {
       handled = true;
@@ -556,11 +528,9 @@ bool MyRenderProcessHandler::CheckType(enum ARG_TYPE c_type,
     break;
   case VTYPE_INT:
     INFO("INT");
-    // more checking
-    return c_type == S32 ? true : false;
+    return c_type == S32 || U32 ? true : false;
     break;
   case VTYPE_DOUBLE:
-
     INFO("DOUBLE");
     return false;
     break;
@@ -624,8 +594,6 @@ CefRefPtr<CefProcessMessage> MyRenderProcessHandler::CreateMessage(
 
   msg_T msg = ui_msg_pull_render_create((c8 *)name);
 
-  INFO("name: %s", ui_msg_bitstream(msg));
-
   CreateMessageBs(msg, name, &in, args_cpy);
 
   CefRefPtr<CefProcessMessage> cef_msg = CefProcessMessage::Create("entry");
@@ -682,15 +650,25 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
   }
 };
 
-void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments,
-                                          void *value, enum ARG_TYPE type) {
+void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments, msg_T msg,
+                                          enum ARG_TYPE type) {
+  assert(msg);
   switch (type) {
-  case U32:
-    arguments.push_back(CefV8Value::CreateUInt(*(u32 *)value));
+  case U32: {
+    u32 value;
+    ui_msg_arg_read_u32(msg, &value);
+    INFO("VALUE U %d", value);
+    arguments.push_back(CefV8Value::CreateUInt(value));
     break;
-  case S32:
-    arguments.push_back(CefV8Value::CreateInt(*(s32 *)value));
+  }
+  case S32: {
+    s32 value;
+    ui_msg_arg_read_s32(msg, &value);
+    INFO("VALUE S %d", value);
+    // ui_msg_arg_read(msg, &value);
+    arguments.push_back(CefV8Value::CreateInt(value));
     break;
+  }
   default:
     break;
   }

@@ -172,7 +172,7 @@ msg_T ui_msg_create_(const c8 *name, struct args *args) {
     goto err_name;
   strcpy(msg->msg, name);
 
-  msg->it = msg->msg + strlen(name) + 2 * sizeof(c8);
+  msg->it = msg->msg + strlen(name) + 1 * sizeof(c8);
   msg->i = 0;
   msg->args = args;
 
@@ -190,10 +190,12 @@ extern msg_T ui_msg_get_fs(void *stream, struct args *args) {
   msg->args = args;
   size_t msg_size = ui_args_argsv_get(args) + strlen(stream) + sizeof(c8);
   msg->msg = malloc(msg_size);
-  if (!msg->msg)
+  if (!msg->msg) {
+    free(msg);
     return NULL;
+  }
   memcpy(msg->msg, stream, msg_size);
-  msg->it = msg->msg + strlen(stream) + 2 * sizeof(c8);
+  msg->it = msg->msg + strlen(stream) + 1 * sizeof(c8);
   msg->i = 0;
   return msg;
 };
@@ -207,7 +209,7 @@ extern msg_T ui_msg_get_fs_raw(void *stream, size_t size) {
   if (!msg->msg)
     return NULL;
   memcpy(msg->msg, stream, size);
-  msg->it = msg->msg + strlen(stream) + 2 * sizeof(c8);
+  msg->it = msg->msg + strlen(stream) + 1 * sizeof(c8);
   msg->i = 0;
   return msg;
 };
@@ -367,7 +369,7 @@ void ui_msg_read_u32_r(msg_T msg, u32 *val) {
 
 void ui_msg_read_string_r(msg_T msg, c8 *string) {
   strcpy(string, msg->it);
-  msg->it += sizeof(c8) * (2 + strlen(string));
+  msg->it += sizeof(c8) * (1 + strlen(string));
 };
 
 size_t ui_msg_string_size_r(msg_T msg) { return strlen(msg->it); };

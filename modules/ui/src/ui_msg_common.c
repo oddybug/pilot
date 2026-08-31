@@ -37,6 +37,9 @@ const c8 *ui_args_e2s_(enum ARG_TYPE type) {
   case U32:
     return "U32";
     break;
+  case STRING:
+    return "STRING";
+    break;
   case ARG_TYPE:
     return "ARG_TYPE";
     break;
@@ -53,6 +56,8 @@ const c8 *ui_args_e2s_(enum ARG_TYPE type) {
  */
 static size_t ui_args_arg_size_(enum ARG_TYPE type);
 
+// THIS PROLLY REFACTORS TO A DATA TYPE args_size in arguments because string is
+// undefined lenght
 static size_t ui_args_arg_size_(enum ARG_TYPE type) {
   u32 res;
   switch (type) {
@@ -61,6 +66,8 @@ static size_t ui_args_arg_size_(enum ARG_TYPE type) {
     break;
   case S32:
     res = sizeof(s32);
+    break;
+  case STRING:
     break;
   case ARG_TYPE:
     res = sizeof(enum ARG_TYPE);
@@ -234,44 +241,66 @@ extern msg_T ui_msg_push_create(const c8 *name) {
   return msg;
 };
 
-s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
-  assert(msg);
-  assert(msg->msg);
-  assert(msg->args);
+static s32 ui_args_check_(msg_T msg, enum ARG_TYPE t);
+
+static s32 ui_args_check_(msg_T msg, enum ARG_TYPE t) {
   if (msg->i > msg->args->n_args) {
     WARN("No more arguments to read in %s", msg->msg);
     return 1;
   }
-  enum ARG_TYPE t = msg->args->args[msg->i];
   if (t != S32) {
-    WARN("Tried to read S32 when next argument is %s from %s", ui_args_e2s_(t),
-         msg->msg);
+    WARN("Tried to read %s when next argument is expected to be %s from %s",
+         ui_args_e2s_(t), msg->args->args[msg->i], msg->msg);
     return 1;
   }
+  return 0;
+};
+
+s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
+  assert(msg);
+  assert(msg->msg);
+  assert(msg->args);
+  if (!ui_args_check_(msg, S32))
+    return 1;
 
   memcpy(val, msg->it, sizeof(s32));
-  INFO("number: %d value: %d", *(s32 *)msg->it, *(s32 *)val);
   msg->it += sizeof(s32);
   msg->i++;
   return 0;
 };
 
 s32 ui_msg_arg_read_u32(msg_T msg, u32 *val) {
-  if (msg->i > msg->args->n_args) {
-    WARN("No more arguments to read in %s", msg->msg);
+
+  if (!ui_args_check_(msg, U32))
     return 1;
-  }
-  enum ARG_TYPE t = msg->args->args[msg->i];
-  if (t != U32) {
-    WARN("Tried to read U32 when next argument is %s from %s", ui_args_e2s_(t),
-         msg->msg);
-    return 1;
-  }
 
   memcpy(val, msg->it, sizeof(u32));
   msg->it += sizeof(u32);
   msg->i++;
   return 0;
+};
+
+s32 ui_msg_string_size(msg_T msg) {
+  if (!ui_args_check_(msg, STRING))
+    return 1;
+
+  // TODO: !important check buffer overflow
+  return ui_msg_string_size_r(msg);
+}
+
+s32 ui_msg_read_string(msg_T msg, c8 *string) {
+  if (msg->i > msg->args->n_args) {
+    WARN("No more arguments to read in %s", msg->msg);
+    return 1;
+  }
+  enum ARG_TYPE t = msg->args->args[msg->i];
+  if (t != STRING) {
+    WARN("Tried to read STRING when next argument is %s from %s",
+         ui_args_e2s_(t), msg->msg);
+    return 1;
+  }
+  ui_msg_read_string_r(msg, string);
+  return 1;
 };
 
 void ui_msg_arg_read(msg_T msg, void *val) {
@@ -367,6 +396,7 @@ void ui_msg_read_u32_r(msg_T msg, u32 *val) {
   msg->it += sizeof(u32);
 };
 
+// TOOD safely read string !IMPORTANT
 void ui_msg_read_string_r(msg_T msg, c8 *string) {
   strcpy(string, msg->it);
   msg->it += sizeof(c8) * (1 + strlen(string));

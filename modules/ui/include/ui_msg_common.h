@@ -10,7 +10,7 @@ extern "C" {
 
 #define DICC_SIZE 1024
 
-enum ARG_TYPE { U32 = 0, S32, ARG_TYPE };
+enum ARG_TYPE { U32 = 0, S32, STRING, ARG_TYPE };
 
 struct response_T {
   const c8 *key;
@@ -83,6 +83,10 @@ extern s32 ui_msg_arg_push_string(msg_T msg, const c8 *string);
 extern s32 ui_msg_arg_read_s32(msg_T msg, s32 *val);
 
 extern s32 ui_msg_arg_read_u32(msg_T msg, u32 *val);
+
+extern s32 ui_msg_string_size(msg_T msg);
+
+extern s32 ui_msg_read_string(msg_T msg, c8 *string);
 
 extern void ui_msg_push_s32_r(msg_T msg, s32 val);
 

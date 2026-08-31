@@ -54,6 +54,7 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     map_T map = ui_msg_render_pull_m();
     struct pull_msg_e_render *e;
     e = (struct pull_msg_e_render *)gen_map_find(map, message_name.c_str());
+
     if (!e) {
       ERROR("No call binded with key: %s", message_name.c_str());
       return false;
@@ -275,8 +276,8 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     void *data = (void *)bin->GetRawData();
 
     ui_msg_pull_rm_add(data, bin->GetSize());
+    return true;
 
-    // ui_ipc_stream_insert(e_map_, data); DEPRECATED
   } else if (message_name == "entry_response") {
     if (pull_callback_map_.empty())
       return false;
@@ -297,14 +298,11 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
       return false;
     }
     CefRefPtr<CefV8Context> context = it->second.first;
-
-    // 1. Verify context validity BEFORE touching V8 handles
     if (!(context.get() && context->IsValid())) {
       WARN("[INTERNAL ERROR] V8 context invalid");
       return false;
     }
     context->Enter();
-    sc += strlen(en) + sizeof(c8);
     struct pull_msg_e_render *e =
         (struct pull_msg_e_render *)gen_map_find(msg_pull_m_, en);
 
@@ -324,7 +322,6 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
 
     CefV8ValueList arguments;
     for (u8 i = 0; i < e->out.n_args; i++) {
-      WARN("IS THIS CALLING");
       PushArgument(arguments, msg, e->out.args[i]);
     }
 
@@ -657,16 +654,19 @@ void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments, msg_T msg,
   case U32: {
     u32 value;
     ui_msg_arg_read_u32(msg, &value);
-    INFO("VALUE U %d", value);
     arguments.push_back(CefV8Value::CreateUInt(value));
     break;
   }
   case S32: {
     s32 value;
     ui_msg_arg_read_s32(msg, &value);
-    INFO("VALUE S %d", value);
-    // ui_msg_arg_read(msg, &value);
     arguments.push_back(CefV8Value::CreateInt(value));
+    break;
+  case STRING:
+    c8 str[ui_msg_string_size(msg)];
+    ui_msg_read_string(msg, str);
+    std::string s = str;
+    arguments.push_back(CefV8Value::CreateString(s));
     break;
   }
   default:

@@ -123,7 +123,7 @@ void ipc_test_fnc(msg_T msg, msg_T response) {
   INFO("Number: %d", num);
 
   s32 result = 999;
-  ui_msg_push_s32(response, result);
+  ui_msg_write_s32(response, result);
 
   send_push_message();
   // ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);
@@ -148,7 +148,7 @@ void send_push_message() {
   if (!msg) {
     return;
   }
-  ui_msg_push_s32(msg, 2);
+  ui_msg_write_s32(msg, 2);
   ui_msg_push_send(msg);
 }
 

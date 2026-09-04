@@ -105,36 +105,36 @@ err_e:
   return 1;
 };
 
-msg_T ui_msg_pull_create(const c8 *name) {
-  map_T map = ui_msg_browser_pull_m();
-  struct pull_msg_bme *pme = gen_map_find(map, name);
-  msg_T msg = ui_msg_create_(name, &pme->out);
-  return msg;
-};
-
-msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
-
-  if (!(it->current && it->current))
-    return NULL;
-
-  struct pull_msg_bme *entry = it->current->value;
-  msg_map_T msg = ui_msg_map_create(it->current->key, &entry->in, &entry->out);
-  int i = 0;
-
-  // ui_msg_map_push_u32(msg, &entry->in.n_args);
-  for (i = 0; i < entry->in.n_args; i++) {
-    s32 at = entry->in.args[i];
-    ui_msg_map_push_s32(msg, &at);
-  }
-
-  ui_msg_map_push_u32(msg, &entry->out.n_args);
-  for (i = 0; i < entry->out.n_args; i++) {
-    s32 at = entry->out.args[i];
-    ui_msg_map_push_s32(msg, &at);
-  }
-
-  map_T map = ui_msg_browser_pull_m();
-  gen_map_it_get_next(map, it);
-
-  return msg;
-};
+// msg_T ui_msg_pull_create(const c8 *name) {
+//   map_T map = ui_msg_browser_pull_m();
+//   struct pull_msg_bme *pme = gen_map_find(map, name);
+//   msg_T msg = ui_msg_create_(name, &pme->out);
+//   return msg;
+// };
+//
+// msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
+//
+//   if (!(it->current && it->current))
+//     return NULL;
+//
+//   struct pull_msg_bme *entry = it->current->value;
+//   msg_map_T msg = ui_msg_map_create(it->current->key, &entry->in,
+//   &entry->out); int i = 0;
+//
+//   // ui_msg_map_push_u32(msg, &entry->in.n_args);
+//   for (i = 0; i < entry->in.n_args; i++) {
+//     s32 at = entry->in.args[i];
+//     ui_msg_map_push_s32(msg, &at);
+//   }
+//
+//   ui_msg_map_push_u32(msg, &entry->out.n_args);
+//   for (i = 0; i < entry->out.n_args; i++) {
+//     s32 at = entry->out.args[i];
+//     ui_msg_map_push_s32(msg, &at);
+//   }
+//
+//   map_T map = ui_msg_browser_pull_m();
+//   gen_map_it_get_next(map, it);
+//
+//   return msg;
+// };

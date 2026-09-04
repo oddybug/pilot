@@ -193,7 +193,7 @@ s32 ui_msg_push_send(msg_T msg) {
   }
 
   // Browser handler send
-  c8 *s = (c8 *)ui_msg_bitstream(msg);
+  c8 *s = (c8 *)ui_msg_bs(msg);
   c8 name[strlen(s) + 1];
   strcpy(name, s);
 

@@ -127,7 +127,7 @@ bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefListValue> cef_response_args = cef_response->GetArgumentList();
 
     CefRefPtr<CefBinaryValue> bs_res = CefBinaryValue::Create(
-        ui_msg_bitstream(response), ui_msg_size(response));
+        ui_msg_bs(response), ui_msg_size(response));
     cef_response_args->SetBinary(0, bs_res);
     frame->SendProcessMessage(PID_RENDERER, cef_response);
 
@@ -162,7 +162,7 @@ bool SimpleHandler::OnProcessMessageReceived(
 
       msg_res = ui_msg_create_(msg_name, &args);
       s32 num = -1;
-      ui_msg_push_s32_r(msg_res, num);
+      ui_msg_write_s32_r(msg_res, num);
 
       msg_s = ui_msg_size(msg_res);
     } else {
@@ -187,19 +187,19 @@ bool SimpleHandler::OnProcessMessageReceived(
       for (i = 1; i < msg_nargs; i++) {
         a[i] = ARG_TYPE;
       }
-      struct args args = {.args = a, .n_args = msg_nargs};
+      struct args args = {.args = a, .n_args = msg_nargs, .size = 0};
       msg_res = ui_msg_create_(msg_name, &args);
 
-      ui_msg_push_s32_r(msg_res, pmb->out.n_args);
+      ui_msg_write_s32_r(msg_res, pmb->out.n_args);
       for (i = 0; i < pmb->out.n_args; i++)
-        ui_msg_push_s32_r(msg_res, (s32)pmb->out.args[i]);
+        ui_msg_write_s32_r(msg_res, (s32)pmb->out.args[i]);
 
       msg_s = ui_msg_size(msg_res);
     }
 
     CefRefPtr<CefListValue> args = response->GetArgumentList();
     CefRefPtr<CefBinaryValue> res_bs =
-        CefBinaryValue::Create(ui_msg_bitstream(msg_res), msg_s);
+        CefBinaryValue::Create(ui_msg_bs(msg_res), msg_s);
     args->SetBinary(0, res_bs);
     frame->SendProcessMessage(PID_RENDERER, response);
     std::string fid = frame->GetIdentifier();
@@ -410,7 +410,7 @@ void SimpleHandler::SendPushMsg(list_T list, msg_T msg) {
     CefRefPtr<CefFrame> frame = it->second;
     // TODO: I DONT KNOW IF BS CAN BE OUT OF THE LOOP TO TRY
     CefRefPtr<CefBinaryValue> bs =
-        CefBinaryValue::Create(ui_msg_bitstream(msg), ui_msg_size(msg));
+        CefBinaryValue::Create(ui_msg_bs(msg), ui_msg_size(msg));
     CefRefPtr<CefProcessMessage> cef_msg =
         CefProcessMessage::Create("push_msg");
     cef_msg->GetArgumentList()->SetBinary(0, bs);

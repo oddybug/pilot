@@ -116,9 +116,9 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     enum ARG_TYPE at = {U32};
     struct args args = {.args = &at, .n_args = 1};
     msg_T req = ui_msg_push_request(message_name.c_str(), &args);
-    ui_msg_push_u32(req, f_args);
+    ui_msg_write_u32(req, f_args);
     CefRefPtr<CefBinaryValue> bs_req =
-        CefBinaryValue::Create(ui_msg_bitstream(req), ui_msg_size(req));
+        CefBinaryValue::Create(ui_msg_bs(req), ui_msg_size(req));
 
     CefRefPtr<CefProcessMessage> cef_msg =
         CefProcessMessage::Create("push_msg_req");
@@ -344,7 +344,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     void *stream = (void *)sc;
     bs->GetData(stream, bs->GetSize(), 0);
 
-    msg_T msg = ui_msg_get_fs_raw(stream, bs->GetSize());
+    msg_T msg = ui_msg_get_fs_r(stream, bs->GetSize());
 
     c8 *msg_name = (c8 *)malloc(sizeof(c8 *) * (strlen(sc) + 1));
     if (!msg_name) {
@@ -596,7 +596,7 @@ CefRefPtr<CefProcessMessage> MyRenderProcessHandler::CreateMessage(
   CefRefPtr<CefProcessMessage> cef_msg = CefProcessMessage::Create("entry");
   CefRefPtr<CefListValue> args_msg = cef_msg->GetArgumentList();
   CefRefPtr<CefBinaryValue> msg_bs =
-      CefBinaryValue::Create(ui_msg_bitstream(msg), bs_size);
+      CefBinaryValue::Create(ui_msg_bs(msg), bs_size);
   args_msg->SetBinary(0, msg_bs);
 
   ui_msg_free(msg);
@@ -624,7 +624,7 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
     break;
   case VTYPE_INT: {
     s32 v = value->GetInt();
-    ui_msg_push_s32(msg, v);
+    ui_msg_write_s32(msg, v);
     INFO("value: %d", v);
     // ui_ipc_
     // ui_ipc_stream_write_arg(stream, &v, S32);
@@ -663,8 +663,8 @@ void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments, msg_T msg,
     arguments.push_back(CefV8Value::CreateInt(value));
     break;
   case STRING:
-    c8 str[ui_msg_string_size(msg)];
-    ui_msg_read_string(msg, str);
+    c8 str[ui_msg_str_size(msg)];
+    ui_msg_write_str(msg, str);
     std::string s = str;
     arguments.push_back(CefV8Value::CreateString(s));
     break;

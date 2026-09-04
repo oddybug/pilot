@@ -13,6 +13,12 @@ file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 
 add_executable(pilot "${APP_SOURCES}")
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_compile_options(pilot PRIVATE -fsanitize=address
+                                       -fno-omit-frame-pointer)
+  target_link_options(pilot PRIVATE -fsanitize=address)
+endif()
+
 # target_sources(pilot PRIVATE "${APP_SOURCES}")
 
 target_include_directories(pilot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"

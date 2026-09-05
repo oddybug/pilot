@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "data/list.h"
 #include "ui.h"
 #include "ui_msg_common.h"
 
@@ -111,30 +112,56 @@ err_e:
 //   msg_T msg = ui_msg_create_(name, &pme->out);
 //   return msg;
 // };
-//
-// msg_map_T ui_msg_pull_bm_e(struct map_it_T *it) {
-//
-//   if (!(it->current && it->current))
-//     return NULL;
-//
-//   struct pull_msg_bme *entry = it->current->value;
-//   msg_map_T msg = ui_msg_map_create(it->current->key, &entry->in,
-//   &entry->out); int i = 0;
-//
-//   // ui_msg_map_push_u32(msg, &entry->in.n_args);
-//   for (i = 0; i < entry->in.n_args; i++) {
-//     s32 at = entry->in.args[i];
-//     ui_msg_map_push_s32(msg, &at);
-//   }
-//
-//   ui_msg_map_push_u32(msg, &entry->out.n_args);
-//   for (i = 0; i < entry->out.n_args; i++) {
-//     s32 at = entry->out.args[i];
-//     ui_msg_map_push_s32(msg, &at);
-//   }
-//
-//   map_T map = ui_msg_browser_pull_m();
-//   gen_map_it_get_next(map, it);
-//
-//   return msg;
-// };
+
+static void ui_msg_args_copy(struct args *dest, struct args *src,
+                             size_t offset) {
+  if (src->n_args + offset > dest->n_args) {
+    WARN("tried to copy more elements than the buffer can hold");
+    return;
+  };
+  memcpy(dest->args + offset, src->args, src->n_args * sizeof(enum ARG_TYPE));
+};
+
+msg_T ui_msg_pull_bm_e(struct map_it_T *it) {
+
+  if (!(it->current && it->current))
+    return NULL;
+
+  struct pull_msg_bme *entry = it->current->value;
+  // msg_T msg = ui_msg_map_create(it->current->key, &entry->in, &entry->out);
+  s32 args_s = entry->in.n_args + entry->out.n_args + 2;
+  enum ARG_TYPE args_t[args_s];
+  struct args args = {.n_args = args_s, .args = args_t};
+
+  args.args[0] = S32;
+  ui_msg_args_copy(&args, &entry->in, 1);
+  args.args[1 + entry->in.n_args] = S32;
+  ui_msg_args_copy(&args, &entry->out, 2 + entry->in.n_args);
+
+  msg_T msg = ui_msg_create(it->current->key, &args);
+
+  list_T values = gen_list_new();
+  gen_list_push_back(values, &entry->in.n_args);
+
+  s32 i;
+  for (i = 0; i < entry->in.n_args; i++) {
+    gen_list_push_back(values, &entry->in.args[i]);
+  }
+
+  gen_list_push_back(values, &entry->out.n_args);
+
+  for (i = 0; i < entry->out.n_args; i++) {
+    gen_list_push_back(values, &entry->out.args[i]);
+  }
+
+  ui_msg_populate_r(msg, values);
+  // Create msg.
+
+  // list now
+
+  // msg_T msg = ui_msg_create(it->current->key, &args);
+  map_T map = ui_msg_browser_pull_m();
+  gen_map_it_get_next(map, it);
+
+  return msg;
+};

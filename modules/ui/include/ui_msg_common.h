@@ -6,6 +6,7 @@ extern "C" {
 #endif // __cplusplus
 
 #include "data/hashmap.h"
+#include "data/list.h"
 #include "types.h"
 
 #define DICC_SIZE 1024
@@ -67,7 +68,7 @@ typedef struct msg *msg_T;
 // extern definition of ui_msg_creates is always WRITE
 msg_T ui_msg_create(const c8 *name, struct args *args);
 
-// msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args);
+msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args);
 
 msg_T ui_msg_get_fs_r(void *stream, size_t size);
 
@@ -75,7 +76,7 @@ msg_T ui_msg_get_fs_r(void *stream, size_t size);
 
 msg_T ui_msg_populate_(msg_T msg, ...);
 
-// msg_T ui_msg_populate_r_(msg_T msg, ...);
+msg_T ui_msg_populate_r(msg_T msg, list_T list);
 
 void ui_msg_free(msg_T msg);
 
@@ -83,39 +84,40 @@ size_t ui_msg_size(msg_T msg);
 
 extern void *ui_msg_bs(msg_T msg);
 
-// extern msg_T ui_msg_push_create(const c8 *name);
+msg_T ui_msg_push_create(const c8 *name);
 
-// extern void ui_msg_cpy_name(msg_T msg, c8 *name);
+void ui_msg_cpy_name(msg_T msg, c8 *name);
 
 extern const c8 *ui_msg_name(msg_T msg);
 
 // access == WRITE
-extern s32 ui_msg_write_s32(msg_T msg, s32 val);
+s32 ui_msg_write_s32(msg_T msg, s32 val);
 
-extern s32 ui_msg_write_u32(msg_T msg, u32 val);
+s32 ui_msg_write_u32(msg_T msg, u32 val);
 
-extern s32 ui_msg_write_string(msg_T msg, const c8 *string);
+s32 ui_msg_write_string(msg_T msg, const c8 *string);
 
 // access == READ
-extern s32 ui_msg_arg_read_s32(msg_T msg, s32 *val);
+s32 ui_msg_arg_read_s32(msg_T msg, s32 *val);
 
-extern s32 ui_msg_arg_read_u32(msg_T msg, u32 *val);
+s32 ui_msg_arg_read_u32(msg_T msg, u32 *val);
 
 extern s32 ui_msg_str_size(msg_T msg);
 
 // access == WRITE
-extern s32 ui_msg_write_str(msg_T msg, c8 *string);
+s32 ui_msg_write_str(msg_T msg, c8 *string);
 
-extern void ui_msg_write_s32_r(msg_T msg, s32 val);
+void ui_msg_write_s32_r(msg_T msg, s32 val);
 
-extern void ui_msg_write_u32_r(msg_T msg, u32 val);
+void ui_msg_write_u32_r(msg_T msg, u32 val);
+
+void ui_msg_write_string_r(msg_T msg, const c8 *string);
 
 // access == READ
-extern void ui_msg_write_string_r(msg_T msg, const c8 *string);
 
-extern void ui_msg_read_s32_r(msg_T msg, s32 *val);
+void ui_msg_read_s32_r(msg_T msg, s32 *val);
 
-extern void ui_msg_read_u32_r(msg_T msg, u32 *val);
+void ui_msg_read_u32_r(msg_T msg, u32 *val);
 
 void ui_msg_read_str_r(msg_T msg, c8 *string);
 

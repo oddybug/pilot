@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "data/hashmap.h"
+#include "data/list.h"
 #include "log.h"
 #include "ui.h"
 #include "ui_msg_browser.h"
@@ -120,24 +121,56 @@ static size_t ui_args_arg_size_(enum ARG_TYPE type, void *value) {
   return res;
 };
 
-static size_t ui_args_argsv_get(struct args *args, va_list list);
+static size_t ui_args_argsv_get_(struct args *args, va_list list);
 
-static size_t ui_args_argsv_get(struct args *args, va_list list) {
+static size_t ui_args_argsv_get_(struct args *args, va_list list) {
 
   size_t msg_size = 0;
   for (int i = 0; i < args->n_args; i++) {
     switch (args->args[i]) {
     case U32:
-      msg_size += ui_args_arg_size_(U32, va_arg(list, s32));
+      (void)va_arg(list, u32);
+      msg_size += ui_args_arg_size_(U32, NULL);
     case S32:
-      msg_size += ui_args_arg_size_(S32, va_arg(list, s32));
+      (void)va_arg(list, s32);
+      msg_size += ui_args_arg_size_(S32, NULL);
     case ARG_TYPE:
-      msg_size += ui_args_arg_size_(ARG_TYPE, va_arg(list, enum ARG_TYPE));
+      (void)va_arg(list, s32);
+      msg_size += ui_args_arg_size_(ARG_TYPE, NULL);
       break;
     case STRING:
       msg_size += ui_args_arg_size_(STRING, va_arg(list, c8 *));
       break;
     }
+  }
+  return msg_size;
+};
+
+static size_t ui_args_argsv_get_r_(struct args *args, list_T list);
+
+static size_t ui_args_argsv_get_r_(struct args *args, list_T list) {
+  size_t msg_size = 0;
+  if (gen_list_size(list) != args->n_args) {
+    WARN("number of args dont match with list size");
+    return 0;
+  }
+
+  struct node *value = gen_list_first(list);
+
+  for (int i = 0; i < args->n_args; i++) {
+    switch (args->args[i]) {
+    case U32:
+      msg_size += ui_args_arg_size_(U32, NULL);
+    case S32:
+      msg_size += ui_args_arg_size_(S32, NULL);
+    case ARG_TYPE:
+      msg_size += ui_args_arg_size_(ARG_TYPE, NULL);
+      break;
+    case STRING:
+      msg_size += ui_args_arg_size_(STRING, (c8 *)value);
+      break;
+    }
+    value = value->next;
   }
   return msg_size;
 };
@@ -224,7 +257,9 @@ static size_t ui_args_argsv_get(struct args *args, va_list list) {
 //   return msg->size;
 // };
 
-static void ui_msg_fill_(msg_T msg, size_t args_s, va_list l) {
+static void ui_msg_populate_h(msg_T msg, size_t args_s, va_list l);
+
+static void ui_msg_populate_h(msg_T msg, size_t args_s, va_list l) {
   assert(msg && !msg->msg);
 
   msg->msg = malloc(args_s + strlen(msg->name) + sizeof(c8));
@@ -270,16 +305,80 @@ err_name:
   return;
 };
 
+static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l);
+
+static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l) {
+  assert(msg && !msg->msg && l);
+
+  if (msg->access != MSG_WRITE) {
+    ERROR("Tried to write in a read message");
+    goto err_access;
+  }
+
+  if (gen_list_size(l) != args_s) {
+    ERROR("args size and list size are not equal");
+    goto err_size;
+  }
+
+  msg->msg = malloc(args_s + strlen(msg->name) + sizeof(c8));
+  if (!msg->msg)
+    goto err_name;
+  strcpy(msg->msg, msg->name);
+
+  msg->it = msg->msg + strlen(msg->name) + 1 * sizeof(c8);
+
+  struct node *n = gen_list_first(l);
+
+  s32 i;
+  for (i = 0; i < msg->args.n_args; i++) {
+    switch (msg->args.args[i]) {
+    case U32: {
+      ui_msg_write_u32_r(msg, *(u32 *)n->value);
+      break;
+    }
+    case S32: {
+      ui_msg_write_s32_r(msg, *(s32 *)n->value);
+      break;
+    }
+    case ARG_TYPE: {
+      ui_msg_write_s32_r(msg, *(s32 *)n->value);
+      break;
+    }
+    case STRING: {
+      c8 *value = (c8 *)n->value;
+      if (!value)
+        goto err_fill;
+      ui_msg_write_string_r(msg, value);
+      break;
+    }
+    }
+    n = n->next;
+    msg->i++;
+  }
+  msg->size = args_s;
+err_fill:
+  free(msg->msg);
+err_name:
+err_size:
+err_access:
+  return;
+}
+
 msg_T ui_msg_populate_(msg_T msg, ...) {
   assert(msg && msg->access == MSG_WRITE && msg->args.args);
   va_list list;
   va_start(list, msg);
-  size_t args_s = ui_args_argsv_get(&msg->args, list);
+  size_t args_s = ui_args_argsv_get_(&msg->args, list);
   va_end(list);
   va_start(list, msg);
-  ui_msg_fill_(msg, args_s, list);
+  ui_msg_populate_h(msg, args_s, list);
   va_end(list);
   return msg;
+};
+
+msg_T ui_msg_populate_r(msg_T msg, list_T list) {
+  size_t args_s = ui_args_argsv_get_r_(&msg->args, list);
+  ui_msg_populate_hr_(msg, args_s, list);
 };
 
 // msg_T ui_msg_create_(const c8 *name, struct args *args) {
@@ -305,19 +404,10 @@ msg_T ui_msg_populate_(msg_T msg, ...) {
 //   return NULL;
 // };
 
-extern msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args) {
-  msg_T msg = malloc(sizeof(struct msg));
-  if (!msg)
-    return NULL;
-  msg->args = args;
-  msg->msg = malloc(stream_s);
-  if (!msg->msg) {
-    free(msg);
-    return NULL;
-  }
-  memcpy(msg->msg, stream, stream_s);
-  msg->it = msg->msg + strlen(stream) + 1 * sizeof(c8);
-  msg->i = 0;
+msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args) {
+  msg_T msg = ui_msg_get_fs_r(stream, stream_s);
+  msg->args.n_args = args->n_args;
+  memcpy(msg->args.args, args->args, sizeof(enum ARG_TYPE) * args->n_args);
   return msg;
 };
 
@@ -359,7 +449,7 @@ err_msg:
 extern size_t ui_msg_size(msg_T msg) {
   assert(msg && msg->name);
 
-  if (msg->i < msg->args->n_args) {
+  if (msg->i < msg->args.n_args) {
     INFO("message %s, has not been processed yet.", msg->name);
     return 0;
   }
@@ -376,8 +466,8 @@ extern msg_T ui_msg_push_create(const c8 *name) {
     return NULL;
   }
 
-  // msg_T msg = ui_msg_create_(name, &pmbme->out);
-  // return msg;
+  msg_T msg = ui_msg_create(name, &pmbme->out);
+  return msg;
 };
 
 extern const c8 *ui_msg_name(msg_T msg) { return msg->name; };
@@ -428,20 +518,20 @@ s32 ui_msg_str_size(msg_T msg) {
   return ui_msg_str_size_r(msg);
 }
 
-// s32 ui_msg_write_str(msg_T msg, c8 *string) {
-//   if (msg->i > msg->args->n_args) {
-//     WARN("No more arguments to read in %s", msg->msg);
-//     return 1;
-//   }
-//   enum ARG_TYPE t = msg->args->args[msg->i];
-//   if (t != STRING) {
-//     WARN("Tried to read STRING when next argument is %s from %s",
-//          ui_args_e2s_(t), msg->msg);
-//     return 1;
-//   }
-//   ui_msg_read_str_r(msg, string);
-//   return 1;
-// };
+s32 ui_msg_write_str(msg_T msg, c8 *string) {
+  if (msg->i > msg->args.n_args) {
+    WARN("No more arguments to read in %s", msg->msg);
+    return 1;
+  }
+  enum ARG_TYPE t = msg->args.args[msg->i];
+  if (t != STRING) {
+    WARN("Tried to read STRING when next argument is %s from %s",
+         ui_args_e2s_(t), msg->msg);
+    return 1;
+  }
+  ui_msg_read_str_r(msg, string);
+  return 1;
+};
 //
 // void ui_msg_arg_read(msg_T msg, void *val) {
 //   switch (msg->args->args[msg->i]) {
@@ -520,33 +610,33 @@ extern void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->msg); };
 //   ui_msg_write_string_r(msg, string);
 // };
 
-// void ui_msg_write_s32_r(msg_T msg, s32 val) {
-//   memcpy(msg->it, &val, sizeof(s32));
-//   msg->it += sizeof(s32);
-//   // msg->size += sizeof(s32);
-// };
-//
-// void ui_msg_write_u32_r(msg_T msg, u32 val) {
-//   memcpy(msg->it, &val, sizeof(u32));
-//   msg->it += sizeof(u32);
-// };
-//
-// extern void ui_msg_write_string_r(msg_T msg, const c8 *string) {
-//
-//   size_t s_l = strlen(string);
-//   strcpy(msg->it, string);
-//   msg->it += sizeof(c8) * (2 + s_l);
-// };
-//
-// void ui_msg_read_s32_r(msg_T msg, s32 *val) {
-//   memcpy(val, msg->it, sizeof(s32));
-//   msg->it += sizeof(s32);
-// };
-//
-// void ui_msg_read_u32_r(msg_T msg, u32 *val) {
-//   memcpy(val, msg->it, sizeof(u32));
-//   msg->it += sizeof(u32);
-// };
+void ui_msg_write_s32_r(msg_T msg, s32 val) {
+  memcpy(msg->it, &val, sizeof(s32));
+  msg->it += sizeof(s32);
+  // msg->size += sizeof(s32);
+};
+
+void ui_msg_write_u32_r(msg_T msg, u32 val) {
+  memcpy(msg->it, &val, sizeof(u32));
+  msg->it += sizeof(u32);
+};
+
+extern void ui_msg_write_string_r(msg_T msg, const c8 *string) {
+
+  size_t s_l = strlen(string);
+  strcpy(msg->it, string);
+  msg->it += sizeof(c8) * (2 + s_l);
+};
+
+void ui_msg_read_s32_r(msg_T msg, s32 *val) {
+  memcpy(val, msg->it, sizeof(s32));
+  msg->it += sizeof(s32);
+};
+
+void ui_msg_read_u32_r(msg_T msg, u32 *val) {
+  memcpy(val, msg->it, sizeof(u32));
+  msg->it += sizeof(u32);
+};
 
 // TOOD safely read string !IMPORTANT
 void ui_msg_read_str_r(msg_T msg, c8 *string) {

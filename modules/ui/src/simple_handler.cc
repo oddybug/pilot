@@ -76,16 +76,17 @@ bool SimpleHandler::OnProcessMessageReceived(
 
     struct map_it_T it;
     gen_map_it_set_begin(pull_msg_m_, &it);
-    msg_map_T msg = ui_msg_pull_bm_e(&it);
+    msg_T msg = ui_msg_pull_bm_e(&it);
+
     while (msg) {
       CefRefPtr<CefProcessMessage> response =
           CefProcessMessage::Create("ipc_dicc_stream");
       CefRefPtr<CefListValue> response_args = response->GetArgumentList();
       CefRefPtr<CefBinaryValue> cef_msg =
-          CefBinaryValue::Create(ui_msg_map_bs(msg), ui_msg_map_size(msg));
+          CefBinaryValue::Create(ui_msg_bs(msg), ui_msg_size(msg));
       response_args->SetBinary(0, cef_msg);
       frame->SendProcessMessage(PID_RENDERER, response);
-      ui_msg_map_free(msg);
+      ui_msg_free(msg);
       msg = ui_msg_pull_bm_e(&it);
     }
     return true;
@@ -108,13 +109,13 @@ bool SimpleHandler::OnProcessMessageReceived(
       return false;
     }
 
-    msg_T msg = ui_msg_get_fs(stream, &e->in);
+    msg_T msg = ui_msg_get_fs(stream, bs->GetSize(), &e->in);
     if (!msg) {
       WARN("msg couldnt get created");
       return false;
     }
 
-    msg_T response = ui_msg_create_(key, &e->out);
+    msg_T response = ui_msg_create(key, &e->out);
     e->callback(msg, response);
 
     if (!e->out.n_args) {
@@ -126,8 +127,8 @@ bool SimpleHandler::OnProcessMessageReceived(
         CefProcessMessage::Create("entry_response");
     CefRefPtr<CefListValue> cef_response_args = cef_response->GetArgumentList();
 
-    CefRefPtr<CefBinaryValue> bs_res = CefBinaryValue::Create(
-        ui_msg_bs(response), ui_msg_size(response));
+    CefRefPtr<CefBinaryValue> bs_res =
+        CefBinaryValue::Create(ui_msg_bs(response), ui_msg_size(response));
     cef_response_args->SetBinary(0, bs_res);
     frame->SendProcessMessage(PID_RENDERER, cef_response);
 
@@ -160,10 +161,10 @@ bool SimpleHandler::OnProcessMessageReceived(
       enum ARG_TYPE a[] = {U32};
       struct args args = {.args = a, .n_args = 1};
 
-      msg_res = ui_msg_create_(msg_name, &args);
-      s32 num = -1;
-      ui_msg_write_s32_r(msg_res, num);
-
+      msg_res = ui_msg_create(msg_name, &args);
+      list_T values = gen_list_new();
+      ui_msg_populate(msg_res, -1);
+      // ui_msg_write_s32_r(msg_res, num);
       msg_s = ui_msg_size(msg_res);
     } else {
       // create entry
@@ -187,13 +188,17 @@ bool SimpleHandler::OnProcessMessageReceived(
       for (i = 1; i < msg_nargs; i++) {
         a[i] = ARG_TYPE;
       }
-      struct args args = {.args = a, .n_args = msg_nargs, .size = 0};
-      msg_res = ui_msg_create_(msg_name, &args);
+      struct args args = {.args = a, .n_args = msg_nargs};
 
-      ui_msg_write_s32_r(msg_res, pmb->out.n_args);
+      msg_res = ui_msg_create(msg_name, &args);
+      list_T values = gen_list_new();
+
+      gen_list_push_back(values, &pmb->out.n_args);
+      // ui_msg_write_s32_r(msg_res, pmb->out.n_args);
       for (i = 0; i < pmb->out.n_args; i++)
-        ui_msg_write_s32_r(msg_res, (s32)pmb->out.args[i]);
+        gen_list_push_back(values, &pmb->out.args[i]);
 
+      ui_msg_populate(msg_res, values);
       msg_s = ui_msg_size(msg_res);
     }
 

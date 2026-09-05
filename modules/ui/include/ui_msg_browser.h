@@ -35,13 +35,13 @@ extern s32 ui_msg_pull_new_entry(const c8 *name,
 
 extern s32 ui_msg_push_new_entry(const c8 *name, struct args *out);
 
-//extern msg_map_T ui_msg_pull_bm_e(struct map_it_T *it);
+extern msg_T ui_msg_pull_bm_e(struct map_it_T *it);
 
-//extern msg_map_T ui_msg_push_bm_e(struct map_it_T *it);
+// extern msg_map_T ui_msg_push_bm_e(struct map_it_T *it);
 
-//extern msg_T ui_msg_pull_create(const c8 *name);
+// extern msg_T ui_msg_pull_create(const c8 *name);
 
-//extern msg_T ui_msg_push_create(const c8 *name);
+// extern msg_T ui_msg_push_create(const c8 *name);
 
 // extern void* ui_msg_pull_bm(size_t *size);
 

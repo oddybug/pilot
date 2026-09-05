@@ -4,9 +4,11 @@
 #include <string.h>
 
 #include "data/hashmap.h"
+#include "data/list.h"
 
 #include "log.h"
 #include "ui.h"
+#include "ui_msg_common.h"
 
 void ui_msg_pullme_free(struct pull_msg_e_render *e) {
   free(e->in.args);
@@ -15,7 +17,7 @@ void ui_msg_pullme_free(struct pull_msg_e_render *e) {
 
 void ui_msg_pushme_free(struct push_msg_e_render *e) { free(e->out.args); };
 
-static struct pull_msg_e_render *ui_msg_mce_render(msg_map_T msg) {
+static struct pull_msg_e_render *ui_msg_mce_render(msg_T msg) {
   struct pull_msg_e_render *entry = malloc(sizeof(struct pull_msg_e_render));
   if (!entry) {
     goto err;
@@ -24,7 +26,7 @@ static struct pull_msg_e_render *ui_msg_mce_render(msg_map_T msg) {
   int i;
 
   u32 n_in;
-  ui_msg_map_read_u32(msg, &n_in);
+  ui_msg_read_u32_r(msg, &n_in);
 
   enum ARG_TYPE *in;
   if (n_in)
@@ -36,13 +38,13 @@ static struct pull_msg_e_render *ui_msg_mce_render(msg_map_T msg) {
     goto err_in;
   for (i = 0; i < n_in; i++) {
     enum ARG_TYPE type;
-    ui_msg_map_read_s32(msg, (s32 *)&type);
+    ui_msg_read_s32_r(msg, (s32 *)&type);
     in[i] = type;
   }
   entry->in = (struct args){.args = in, .n_args = n_in};
 
   u32 n_out;
-  ui_msg_map_read_u32(msg, &n_out);
+  ui_msg_read_u32_r(msg, &n_out);
 
   enum ARG_TYPE *out;
   if (n_out)
@@ -54,7 +56,7 @@ static struct pull_msg_e_render *ui_msg_mce_render(msg_map_T msg) {
     goto err_out;
   for (i = 0; i < n_out; i++) {
     enum ARG_TYPE type;
-    ui_msg_map_read_s32(msg, (s32 *)&type);
+    ui_msg_read_s32_r(msg, (s32 *)&type);
     out[i] = type;
   }
   entry->out = (struct args){.args = out, .n_args = n_out};
@@ -73,7 +75,7 @@ s32 ui_msg_pull_rm_add(void *stream, size_t size) {
   if (!map)
     goto err;
 
-  msg_map_T msg = ui_msg_map_bs2m(stream, size);
+  msg_T msg = ui_msg_get_fs_r(stream, size); // ui_msg_map_bs2m(stream, size);
   if (!msg)
     goto err;
 
@@ -81,7 +83,7 @@ s32 ui_msg_pull_rm_add(void *stream, size_t size) {
   if (!entry)
     goto err;
 
-  void *bs = ui_msg_map_bs(msg);
+  void *bs = ui_msg_bs(msg);
   if (!bs)
     goto err;
 
@@ -91,23 +93,21 @@ s32 ui_msg_pull_rm_add(void *stream, size_t size) {
   strcpy(key, bs);
 
   s32 err = gen_map_insert(map, key, entry);
-  ui_msg_map_free(msg);
+  ui_msg_free(msg);
   return 0;
 err:
   WARN("failed to add entry to pull msg in renderer");
   return 1;
 };
 
-extern msg_T ui_msg_create_(const c8 *name, struct args *args);
-
-msg_T ui_msg_pull_render_create(c8 *name) {
-  map_T map = ui_msg_render_pull_m();
-  struct pull_msg_e_render *pme = gen_map_find(map, name);
-  msg_T msg = ui_msg_create_(name, &pme->in);
-  return msg;
-};
+// msg_T ui_msg_pull_render_create(c8 *name) {
+//   map_T map = ui_msg_render_pull_m();
+//   struct pull_msg_e_render *pme = gen_map_find(map, name);
+//   msg_T msg = ui_msg_create_(name, &pme->in);
+//   return msg;
+// };
 
 msg_T ui_msg_push_request(const c8 *name, struct args *args) {
-  msg_T msg = ui_msg_create_(name, args);
+  msg_T msg = ui_msg_create(name, args);
   return msg;
 };

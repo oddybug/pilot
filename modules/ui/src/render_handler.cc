@@ -5,6 +5,7 @@
 
 #include "data/hashmap.h"
 #include "data/hashmap_helpers.h"
+#include "data/list.h"
 #include "log.h"
 
 #include "include/base/cef_logging.h"
@@ -116,7 +117,8 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     enum ARG_TYPE at = {U32};
     struct args args = {.args = &at, .n_args = 1};
     msg_T req = ui_msg_push_request(message_name.c_str(), &args);
-    ui_msg_write_u32(req, f_args);
+    ui_msg_populate(req, f_args);
+    // ui_msg_write_u32(req, f_args);
     CefRefPtr<CefBinaryValue> bs_req =
         CefBinaryValue::Create(ui_msg_bs(req), ui_msg_size(req));
 
@@ -312,7 +314,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     }
 
     struct args out_args = e->out;
-    msg_T msg = ui_msg_get_fs(stream, &out_args);
+    msg_T msg = ui_msg_get_fs(stream, bs->GetSize(), &out_args);
 
     CefRefPtr<CefV8Value> callback = it->second.second;
 
@@ -434,7 +436,7 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     }
 
     struct args out_args = e->out;
-    msg_T msg = ui_msg_get_fs(stream, &out_args);
+    msg_T msg = ui_msg_get_fs(stream, bs->GetSize(), &out_args);
 
     CefRefPtr<CefV8Value> callback = it->second.second;
 
@@ -586,17 +588,21 @@ CefRefPtr<CefProcessMessage> MyRenderProcessHandler::CreateMessage(
     return nullptr;
   }
 
-  size_t name_len = strlen(name) + sizeof(c8);
-  size_t bs_size = name_len + ui_args_argsv_get(&e->in);
+  // size_t name_len = strlen(name) + sizeof(c8);
+  // size_t bs_size = name_len + ui_args_argsv_get(&e->in);
 
-  msg_T msg = ui_msg_pull_render_create((c8 *)name);
+  // msg_T msg = ui_msg_pull_render_create((c8 *)name);
 
+  map_T map = ui_msg_render_pull_m();
+  struct pull_msg_e_render *pme =
+      (struct pull_msg_e_render *)gen_map_find(map, name);
+  msg_T msg = ui_msg_create(name, &pme->in);
   CreateMessageBs(msg, name, &in, args_cpy);
 
   CefRefPtr<CefProcessMessage> cef_msg = CefProcessMessage::Create("entry");
   CefRefPtr<CefListValue> args_msg = cef_msg->GetArgumentList();
   CefRefPtr<CefBinaryValue> msg_bs =
-      CefBinaryValue::Create(ui_msg_bs(msg), bs_size);
+      CefBinaryValue::Create(ui_msg_bs(msg), ui_msg_size(msg));
   args_msg->SetBinary(0, msg_bs);
 
   ui_msg_free(msg);
@@ -606,14 +612,21 @@ CefRefPtr<CefProcessMessage> MyRenderProcessHandler::CreateMessage(
 void MyRenderProcessHandler::CreateMessageBs(msg_T msg, const c8 *name,
                                              struct args *in,
                                              CefRefPtr<CefListValue> &args) {
+  list_T l = gen_list_new();
   for (int i = 0; i < in->n_args; i++) {
     CefRefPtr<CefValue> value = args->GetValue(i);
-    CopyValueToStream(value, msg);
+    CopyValueToStream(value, msg, l);
+  }
+  ui_msg_populate(msg, l);
+
+  while (gen_list_size(l)) {
+    void *value = gen_list_pop(l);
+    free(value);
   }
 }
 
 void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
-                                               msg_T msg) {
+                                               msg_T msg, list_T l) {
   CefValueType type = value->GetType();
   switch (type) {
   case VTYPE_INVALID:
@@ -623,11 +636,12 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
   case VTYPE_BOOL:
     break;
   case VTYPE_INT: {
-    s32 v = value->GetInt();
-    ui_msg_write_s32(msg, v);
-    INFO("value: %d", v);
-    // ui_ipc_
-    // ui_ipc_stream_write_arg(stream, &v, S32);
+    s32 *v = (s32 *)malloc(sizeof(s32));
+    if (!v)
+      goto err;
+    *v = value->GetInt();
+    gen_list_push_back(l, v);
+    // INFO("value: %d", v);
     break;
   }
   case VTYPE_DOUBLE:
@@ -645,6 +659,10 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
   default:
     break;
   }
+
+err:
+  WARN("failed to allocate memory");
+  return;
 };
 
 void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments, msg_T msg,

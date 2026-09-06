@@ -47,11 +47,11 @@ msg_T ui_msg_create(const c8 *name, struct args *args) {
 
   msg->args.args = malloc(sizeof(enum ARG_TYPE) * args->n_args);
 
-  if (msg->args.args)
+  if (!msg->args.args)
     goto err_args;
 
-  memcpy(msg->args.args, args, sizeof(enum ARG_TYPE) * args->n_args);
-  msg->args.n_args = 0;
+  memcpy(msg->args.args, args->args, sizeof(enum ARG_TYPE) * args->n_args);
+  msg->args.n_args = args->n_args;
   msg->size = 0;
   msg->msg = NULL;
   msg->it = NULL;
@@ -315,7 +315,7 @@ static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l) {
     goto err_access;
   }
 
-  if (gen_list_size(l) != args_s) {
+  if (gen_list_size(l) != msg->args.n_args) {
     ERROR("args size and list size are not equal");
     goto err_size;
   }
@@ -356,6 +356,7 @@ static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l) {
     msg->i++;
   }
   msg->size = args_s;
+  return;
 err_fill:
   free(msg->msg);
 err_name:
@@ -364,8 +365,10 @@ err_access:
   return;
 }
 
-msg_T ui_msg_populate_(msg_T msg, ...) {
-  assert(msg && msg->access == MSG_WRITE && msg->args.args);
+void ui_msg_populate_(msg_T msg, ...) {
+  assert(msg);
+  assert(msg->access == MSG_WRITE);
+  assert(msg->args.args);
   va_list list;
   va_start(list, msg);
   size_t args_s = ui_args_argsv_get_(&msg->args, list);
@@ -373,10 +376,10 @@ msg_T ui_msg_populate_(msg_T msg, ...) {
   va_start(list, msg);
   ui_msg_populate_h(msg, args_s, list);
   va_end(list);
-  return msg;
 };
 
-msg_T ui_msg_populate_r(msg_T msg, list_T list) {
+void ui_msg_populate_r(msg_T msg, list_T list) {
+  assert(msg);
   size_t args_s = ui_args_argsv_get_r_(&msg->args, list);
   ui_msg_populate_hr_(msg, args_s, list);
 };

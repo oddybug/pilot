@@ -74,9 +74,9 @@ msg_T ui_msg_get_fs_r(void *stream, size_t size);
 
 #define ui_msg_populate(msg, ...) ui_msg_populate_(msg, __VA_ARGS__, NULL)
 
-msg_T ui_msg_populate_(msg_T msg, ...);
+void ui_msg_populate_(msg_T msg, ...);
 
-msg_T ui_msg_populate_r(msg_T msg, list_T list);
+void ui_msg_populate_r(msg_T msg, list_T list);
 
 void ui_msg_free(msg_T msg);
 

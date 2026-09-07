@@ -131,9 +131,11 @@ static size_t ui_args_argsv_get_(struct args *args, va_list list) {
     case U32:
       (void)va_arg(list, u32);
       msg_size += ui_args_arg_size_(U32, NULL);
+      break;
     case S32:
       (void)va_arg(list, s32);
       msg_size += ui_args_arg_size_(S32, NULL);
+      break;
     case ARG_TYPE:
       (void)va_arg(list, s32);
       msg_size += ui_args_arg_size_(ARG_TYPE, NULL);
@@ -161,8 +163,10 @@ static size_t ui_args_argsv_get_r_(struct args *args, list_T list) {
     switch (args->args[i]) {
     case U32:
       msg_size += ui_args_arg_size_(U32, NULL);
+      break;
     case S32:
       msg_size += ui_args_arg_size_(S32, NULL);
+      break;
     case ARG_TYPE:
       msg_size += ui_args_arg_size_(ARG_TYPE, NULL);
       break;
@@ -298,7 +302,8 @@ static void ui_msg_populate_h(msg_T msg, size_t args_s, va_list l) {
     }
     msg->i++;
   }
-  msg->size = args_s;
+  msg->size = strlen(msg->name) + 1 + args_s;
+  return;
 err_fill:
   free(msg->msg);
 err_name:
@@ -355,7 +360,7 @@ static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l) {
     n = n->next;
     msg->i++;
   }
-  msg->size = args_s;
+  msg->size = args_s + strlen(msg->name) + sizeof(c8);
   return;
 err_fill:
   free(msg->msg);
@@ -410,6 +415,12 @@ void ui_msg_populate_r(msg_T msg, list_T list) {
 msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args) {
   msg_T msg = ui_msg_get_fs_r(stream, stream_s);
   msg->args.n_args = args->n_args;
+  msg->args.args = malloc(sizeof(enum ARG_TYPE) * args->n_args);
+  if (!msg->args.args) {
+    ERROR("malloc failed");
+    free(msg);
+    return NULL;
+  }
   memcpy(msg->args.args, args->args, sizeof(enum ARG_TYPE) * args->n_args);
   return msg;
 };
@@ -436,7 +447,7 @@ extern msg_T ui_msg_get_fs_r(void *stream, size_t size) {
   msg->access = MSG_READ;
   msg->size = size;
   msg->i = 0;
-  msg->it = msg->msg + strlen(stream) + sizeof(c8);
+  msg->it = msg->msg + strlen(msg->name) + sizeof(c8);
 
   return msg;
 
@@ -482,7 +493,7 @@ static s32 ui_args_check_(msg_T msg, enum ARG_TYPE t) {
     WARN("No more arguments to read in %s", msg->msg);
     return 1;
   }
-  if (t != S32) {
+  if (t != msg->args.args[msg->i]) {
     WARN("Tried to read %s when next argument is expected to be %s from %s",
          ui_args_e2s_(t), msg->args.args[msg->i], msg->msg);
     return 1;
@@ -493,7 +504,7 @@ static s32 ui_args_check_(msg_T msg, enum ARG_TYPE t) {
 s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
   assert(msg);
   assert(msg->msg);
-  if (!ui_args_check_(msg, S32))
+  if (ui_args_check_(msg, S32))
     return 1;
 
   memcpy(val, msg->it, sizeof(s32));
@@ -504,7 +515,7 @@ s32 ui_msg_arg_read_s32(msg_T msg, s32 *val) {
 
 s32 ui_msg_arg_read_u32(msg_T msg, u32 *val) {
 
-  if (!ui_args_check_(msg, U32))
+  if (ui_args_check_(msg, U32))
     return 1;
 
   memcpy(val, msg->it, sizeof(u32));
@@ -513,9 +524,23 @@ s32 ui_msg_arg_read_u32(msg_T msg, u32 *val) {
   return 0;
 };
 
-s32 ui_msg_str_size(msg_T msg) {
-  if (!ui_args_check_(msg, STRING))
+s32 ui_msg_arg_read_str(msg_T msg, c8 *val) {
+
+  if (ui_args_check_(msg, STRING))
     return 1;
+
+  size_t sl = ui_msg_str_size_r(msg) + 1;
+  if (!sl)
+    return 1;
+  ui_msg_read_str_r(msg, val);
+  msg->it += sizeof(c8) * sl;
+  msg->i++;
+  return 0;
+};
+
+size_t ui_msg_str_size(msg_T msg) {
+  if (ui_args_check_(msg, STRING))
+    return 0;
 
   // TODO: !important check buffer overflow
   return ui_msg_str_size_r(msg);
@@ -558,13 +583,15 @@ s32 ui_msg_write_str(msg_T msg, c8 *string) {
 
 extern void ui_msg_free(msg_T msg) {
   assert(msg);
-  free(msg->msg);
-  free(msg->args.args);
+  if (msg->args.args)
+    free(msg->msg);
+  if (msg->args.args)
+    free(msg->args.args);
   free(msg->name);
   free(msg);
 };
 
-extern void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->msg); };
+extern void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->name); };
 
 // s32 ui_msg_write_s32(msg_T msg, s32 val) {
 //   if (msg->i > msg->args.n_args) {
@@ -628,7 +655,7 @@ extern void ui_msg_write_string_r(msg_T msg, const c8 *string) {
 
   size_t s_l = strlen(string);
   strcpy(msg->it, string);
-  msg->it += sizeof(c8) * (2 + s_l);
+  msg->it += sizeof(c8) * (1 + s_l);
 };
 
 void ui_msg_read_s32_r(msg_T msg, s32 *val) {

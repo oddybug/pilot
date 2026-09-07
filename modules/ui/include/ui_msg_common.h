@@ -102,7 +102,9 @@ s32 ui_msg_arg_read_s32(msg_T msg, s32 *val);
 
 s32 ui_msg_arg_read_u32(msg_T msg, u32 *val);
 
-extern s32 ui_msg_str_size(msg_T msg);
+s32 ui_msg_arg_read_str(msg_T msg, c8 *val);
+
+size_t ui_msg_str_size(msg_T msg);
 
 // access == WRITE
 s32 ui_msg_write_str(msg_T msg, c8 *string);

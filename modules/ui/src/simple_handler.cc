@@ -198,7 +198,7 @@ bool SimpleHandler::OnProcessMessageReceived(
       for (i = 0; i < pmb->out.n_args; i++)
         gen_list_push_back(values, &pmb->out.args[i]);
 
-      ui_msg_populate(msg_res, values);
+      ui_msg_populate_r(msg_res,values);
       msg_s = ui_msg_size(msg_res);
     }
 

@@ -120,10 +120,10 @@ void send_push_message();
 void ipc_test_fnc(msg_T msg, msg_T response) {
   s32 num;
   ui_msg_arg_read_s32(msg, &num);
-  INFO("Number: %d", num);
+  INFO("Number is not this no?: %d", num);
 
   s32 result = 999;
-  ui_msg_populate(response, 2); // ui_msg_write_s32(response, result);
+  ui_msg_populate(response, "holaque tal estan"); // ui_msg_write_s32(response, result);
 
   send_push_message();
   // ui_ipc_stream_write_arg(&response->it, (void *)&result, S32);
@@ -132,7 +132,7 @@ void ipc_test_fnc(msg_T msg, msg_T response) {
 void set_ipc_calls() {
   enum ARG_TYPE i[1] = {S32};
   struct args args_i = (struct args){.args = i, .n_args = 1};
-  enum ARG_TYPE o[1] = {S32};
+  enum ARG_TYPE o[1] = {STRING};
   struct args args_o = (struct args){.args = o, .n_args = 1};
 
   ui_msg_pull_new_entry("another_call", ipc_test_fnc, &args_i, &args_o);
@@ -140,7 +140,7 @@ void set_ipc_calls() {
 
   INFO("SUCCESFULL ENTRY ADDED");
 
-  ui_msg_push_new_entry("hello", &args_o);
+  ui_msg_push_new_entry("hello", &args_i);
 }
 
 void send_push_message() {
@@ -265,6 +265,7 @@ void create_targets() {
 }
 
 int main(int argc, char *argv[]) {
+  // INFO("HOLAAA");
 
   if (ui_start(argc, argv) != 0) {
     return -1;

@@ -91,7 +91,7 @@ extern s32 ui_msg_push_new_entry(const c8 *name, struct args *out) {
   enum ARG_TYPE *out_cpy = malloc(sizeof(enum ARG_TYPE) * out->n_args);
   if (!out_cpy)
     goto err_out;
-  memcpy(out_cpy, out->args, sizeof(*out_cpy) * out->n_args);
+  memcpy(out_cpy, out->args, sizeof(enum ARG_TYPE) * out->n_args);
 
   e_c->out = (struct args){.args = out_cpy, .n_args = out->n_args};
   e_c->render = NULL;

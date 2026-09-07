@@ -116,9 +116,8 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     }
     enum ARG_TYPE at = {U32};
     struct args args = {.args = &at, .n_args = 1};
-    msg_T req = ui_msg_push_request(message_name.c_str(), &args);
+    msg_T req = ui_msg_create(message_name.c_str(), &args);
     ui_msg_populate(req, f_args);
-    // ui_msg_write_u32(req, f_args);
     CefRefPtr<CefBinaryValue> bs_req =
         CefBinaryValue::Create(ui_msg_bs(req), ui_msg_size(req));
 
@@ -534,6 +533,7 @@ bool MyRenderProcessHandler::CheckType(enum ARG_TYPE c_type,
     return false;
     break;
   case VTYPE_STRING:
+    return c_type == STRING ? true : false;
     INFO("STRING");
     return false;
     break;
@@ -617,7 +617,7 @@ void MyRenderProcessHandler::CreateMessageBs(msg_T msg, const c8 *name,
     CefRefPtr<CefValue> value = args->GetValue(i);
     CopyValueToStream(value, msg, l);
   }
-  ui_msg_populate(msg, l);
+  ui_msg_populate_r(msg, l);
 
   while (gen_list_size(l)) {
     void *value = gen_list_pop(l);
@@ -646,8 +646,22 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
   }
   case VTYPE_DOUBLE:
     break;
-  case VTYPE_STRING:
+  case VTYPE_STRING: {
+
+    INFO("gola");
+    std::string str = value->GetString();
+
+    c8 *v = (c8 *)malloc(sizeof(c8) * str.length() + 1);
+    if (!v)
+      goto err;
+    strcpy(v, str.c_str());
+
+    INFO("gola");
+    INFO("string: %s", v);
+    gen_list_push_back(l, v);
+
     break;
+  }
   case VTYPE_BINARY:
     break;
   case VTYPE_DICTIONARY:
@@ -660,6 +674,7 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
     break;
   }
 
+  return;
 err:
   WARN("failed to allocate memory");
   return;
@@ -681,8 +696,9 @@ void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments, msg_T msg,
     arguments.push_back(CefV8Value::CreateInt(value));
     break;
   case STRING:
-    c8 str[ui_msg_str_size(msg)];
-    ui_msg_write_str(msg, str);
+    c8 str[ui_msg_str_size(msg) + 1];
+    ui_msg_arg_read_str(msg, str);
+    INFO("%s", str);
     std::string s = str;
     arguments.push_back(CefV8Value::CreateString(s));
     break;

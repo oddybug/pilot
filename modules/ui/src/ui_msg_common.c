@@ -26,14 +26,6 @@ struct msg {
   size_t size;
 };
 
-// struct msg_map {
-//   c8 *name;
-//   void *msg;
-//   void *it;
-//   // this could be simplified as now the message have lenght
-//   size_t size;
-// };
-
 msg_T ui_msg_create(const c8 *name, struct args *args) {
   assert(name);
   msg_T msg = malloc(sizeof(struct msg));
@@ -91,17 +83,6 @@ const c8 *ui_args_e2s_(enum ARG_TYPE type) {
   }
 };
 
-// DEPRECATED
-/**
- * @brief Get the size in bytes of an arg
- *
- * @param type
- * @return
- */
-// static size_t ui_args_arg_size_(enum ARG_TYPE type);
-
-// THIS PROLLY REFACTORS TO A DATA TYPE args_size in arguments because string is
-// undefined lenght
 static size_t ui_args_arg_size_(enum ARG_TYPE type, void *value) {
   u32 res;
   switch (type) {
@@ -178,88 +159,6 @@ static size_t ui_args_argsv_get_r_(struct args *args, list_T list) {
   }
   return msg_size;
 };
-
-// void ui_msg_map_push_s32(msg_map_T msg, s32 *val) {
-//   memcpy(msg->it, val, sizeof(s32));
-//   msg->it += sizeof(s32);
-//   // msg->size += sizeof(s32);
-// };
-//
-// void ui_msg_map_push_u32(msg_map_T msg, u32 *val) {
-//   memcpy(msg->it, val, sizeof(u32));
-//   msg->it += sizeof(u32);
-//   // msg->size += sizeof(u32);
-// };
-//
-// void ui_msg_map_read_s32(msg_map_T msg, s32 *val) {
-//   memcpy(val, msg->it, sizeof(s32));
-//   msg->it += sizeof(s32);
-// };
-//
-// extern void ui_msg_map_read_u32(msg_map_T msg, u32 *val) {
-//   memcpy(val, msg->it, sizeof(u32));
-//   msg->it += sizeof(u32);
-// };
-
-// msg_map_T ui_msg_map_create(const c8 *name, struct args *in, struct args
-// *out) {
-//   assert(in || out || name);
-//
-//   msg_map_T msg = malloc(sizeof(struct msg_map));
-//   if (!msg)
-//     goto err;
-//
-//   msg->size = 0;
-//   // msg->msg = malloc(msg_size);
-//
-//   // if (!msg->msg)
-//   //   goto err_name;
-//
-//   // strcpy(msg->msg, name);
-//   // msg->it = msg->msg + strlen(name) + sizeof(c8);
-//
-//   return msg;
-// err_name:
-//   free(msg);
-// err:
-//   return NULL;
-// };
-
-// void ui_msg_map_free(msg_map_T msg) {
-//   assert(msg || msg->msg);
-//   free(msg->msg);
-//   free(msg);
-// };
-
-// void *ui_msg_map_bs(msg_map_T msg) {
-//   assert(msg);
-//   return msg->msg;
-// };
-
-// msg_map_T ui_msg_map_bs2m(void *stream, size_t size) {
-//   msg_map_T msg = malloc(sizeof(struct msg_map));
-//   if (!msg) {
-//     goto err;
-//   }
-//   msg->msg = malloc(size);
-//   if (!msg->msg) {
-//     goto err_name;
-//   }
-//   mempcpy(msg->msg, stream, size);
-//   msg->size = size;
-//   msg->it = msg->msg + strlen(stream) + sizeof(c8);
-//   return msg;
-//
-// err_name:
-//   free(msg);
-// err:
-//   return NULL;
-// };
-//
-// size_t ui_msg_map_size(msg_map_T msg) {
-//   assert(msg || msg->msg);
-//   return msg->size;
-// };
 
 static void ui_msg_populate_h(msg_T msg, size_t args_s, va_list l);
 
@@ -388,29 +287,6 @@ void ui_msg_populate_r(msg_T msg, list_T list) {
   size_t args_s = ui_args_argsv_get_r_(&msg->args, list);
   ui_msg_populate_hr_(msg, args_s, list);
 };
-
-// msg_T ui_msg_create_(const c8 *name, struct args *args) {
-//   assert(args && name);
-//   msg_T msg = malloc(sizeof(struct msg));
-//   if (!msg)
-//     goto err;
-//
-//   size_t msg_size = ui_args_argsv_get(args) + sizeof(name) + sizeof(c8);
-//   msg->msg = malloc(msg_size);
-//   if (!msg->msg)
-//     goto err_name;
-//   strcpy(msg->msg, name);
-//
-//   msg->it = msg->msg + strlen(name) + 1 * sizeof(c8);
-//   msg->i = 0;
-//   msg->args = args;
-//
-//   return msg;
-// err_name:
-//   free(msg);
-// err:
-//   return NULL;
-// };
 
 msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args) {
   msg_T msg = ui_msg_get_fs_r(stream, stream_s);
@@ -560,26 +436,6 @@ s32 ui_msg_write_str(msg_T msg, c8 *string) {
   ui_msg_read_str_r(msg, string);
   return 1;
 };
-//
-// void ui_msg_arg_read(msg_T msg, void *val) {
-//   switch (msg->args->args[msg->i]) {
-//   S32:
-//     {
-//       ui_msg_arg_read_s32(msg, val);
-//       break;
-//     }
-//   U32:
-//     {
-//       ui_msg_arg_read_u32(msg, val);
-//       break;
-//     }
-//   ARG_TYPE:
-//     break;
-//   default:
-//
-//     break;
-//   }
-// };
 
 extern void ui_msg_free(msg_T msg) {
   assert(msg);
@@ -592,53 +448,6 @@ extern void ui_msg_free(msg_T msg) {
 };
 
 extern void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->name); };
-
-// s32 ui_msg_write_s32(msg_T msg, s32 val) {
-//   if (msg->i > msg->args.n_args) {
-//     WARN("No more arguments to push in %s", msg->msg);
-//     return 1;
-//   }
-//
-//   enum ARG_TYPE t = msg->args.args[msg->i];
-//
-//   if (t != S32) {
-//     WARN("Tried to push S32 when next argument is %s from %s",
-//     ui_args_e2s_(t),
-//          msg->msg);
-//     return 1;
-//   }
-//
-//   memcpy(msg->it, &val, sizeof(s32));
-//
-//   msg->it += sizeof(s32);
-//   msg->i++;
-//   return 0;
-// };
-//
-// extern s32 ui_msg_write_u32(msg_T msg, u32 val) {
-//   if (msg->i > msg->args->n_args) {
-//     WARN("No more arguments to push in %s", msg->msg);
-//     return 1;
-//   }
-//   enum ARG_TYPE t = msg->args->args[msg->i];
-//   if (t != U32) {
-//     WARN("Tried to push U32 when next argument is %s from %s",
-//     ui_args_e2s_(t),
-//          msg->msg);
-//     return 1;
-//   }
-//   memcpy(msg->it, &val, sizeof(u32));
-//
-//   msg->it += sizeof(u32);
-//   msg->i++;
-//   return 0;
-// };
-
-// extern s32 ui_msg_write_string(msg_T msg, const c8 *string) {
-//   if (!ui_args_check_(msg, STRING))
-//     return 1;
-//   ui_msg_write_string_r(msg, string);
-// };
 
 void ui_msg_write_s32_r(msg_T msg, s32 val) {
   memcpy(msg->it, &val, sizeof(s32));

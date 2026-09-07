@@ -12,11 +12,9 @@ struct pull_msg_bme {
   void (*callback)(msg_T msg, msg_T response);
   struct args in;
   struct args out;
-  // struct push_msg_e_render e;
 };
 
 struct push_msg_bme {
-  // i need the fucking linked list here
   list_T render;
   struct args out;
 };
@@ -36,14 +34,6 @@ extern s32 ui_msg_pull_new_entry(const c8 *name,
 extern s32 ui_msg_push_new_entry(const c8 *name, struct args *out);
 
 extern msg_T ui_msg_pull_bm_e(struct map_it_T *it);
-
-// extern msg_map_T ui_msg_push_bm_e(struct map_it_T *it);
-
-// extern msg_T ui_msg_pull_create(const c8 *name);
-
-// extern msg_T ui_msg_push_create(const c8 *name);
-
-// extern void* ui_msg_pull_bm(size_t *size);
 
 #ifdef __cplusplus
 }

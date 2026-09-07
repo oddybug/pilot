@@ -100,13 +100,6 @@ err:
   return 1;
 };
 
-// msg_T ui_msg_pull_render_create(c8 *name) {
-//   map_T map = ui_msg_render_pull_m();
-//   struct pull_msg_e_render *pme = gen_map_find(map, name);
-//   msg_T msg = ui_msg_create_(name, &pme->in);
-//   return msg;
-// };
-
 msg_T ui_msg_push_request(const c8 *name, struct args *args) {
   msg_T msg = ui_msg_create(name, args);
   return msg;

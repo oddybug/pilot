@@ -106,13 +106,6 @@ err_e:
   return 1;
 };
 
-// msg_T ui_msg_pull_create(const c8 *name) {
-//   map_T map = ui_msg_browser_pull_m();
-//   struct pull_msg_bme *pme = gen_map_find(map, name);
-//   msg_T msg = ui_msg_create_(name, &pme->out);
-//   return msg;
-// };
-
 static void ui_msg_args_copy(struct args *dest, struct args *src,
                              size_t offset) {
   if (src->n_args + offset > dest->n_args) {
@@ -128,7 +121,6 @@ msg_T ui_msg_pull_bm_e(struct map_it_T *it) {
     return NULL;
 
   struct pull_msg_bme *entry = it->current->value;
-  // msg_T msg = ui_msg_map_create(it->current->key, &entry->in, &entry->out);
   s32 args_s = entry->in.n_args + entry->out.n_args + 2;
   enum ARG_TYPE args_t[args_s];
   struct args args = {.n_args = args_s, .args = args_t};
@@ -155,11 +147,7 @@ msg_T ui_msg_pull_bm_e(struct map_it_T *it) {
   }
 
   ui_msg_populate_r(msg, values);
-  // Create msg.
 
-  // list now
-
-  // msg_T msg = ui_msg_create(it->current->key, &args);
   map_T map = ui_msg_browser_pull_m();
   gen_map_it_get_next(map, it);
 

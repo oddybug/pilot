@@ -63,8 +63,10 @@ public:
   bool AreAllBrowsersClosed();
 
   using TextureCallbackFn = void (*)(u8 *, u32, u32);
+  using CursorCallbackFn = void (*)(s32);
 
   void SetTextureCallback(TextureCallbackFn clbk);
+  void SetCursorCallback(CursorCallbackFn clbk);
 
   void ResizeBrowsers(u32 width, u32 height);
 
@@ -151,12 +153,17 @@ public:
   void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                   TextInputMode input_mode) override;
 
+  bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
+                      cef_cursor_type_t type,
+                      const CefCursorInfo &custom_cursor_info) override;
+
   //
   // END OF CefRenderHandler INTERFACE
   //
 
 private:
   TextureCallbackFn text_callback_ = nullptr;
+  CursorCallbackFn cursor_callback_ = nullptr;
 };
 
 #endif // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

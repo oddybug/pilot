@@ -11,6 +11,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_mouse.h>
 
 #include "io_manager.h"
 
@@ -115,7 +116,7 @@ static s8 iom_init_glad_gl();
 
 static s8 iom_init_glad_gl() {
 
-  int version = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
+  s32 version = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
 
   if (version == 0) {
     return 1;
@@ -322,6 +323,17 @@ extern struct point_T iom_get_window_size() {
 };
 
 extern s32 iom_can_close() { return !g_running; };
+
+extern void iom_set_cursor(s32 cursor) {
+  if (cursor < 0 || cursor >= IOM_CURSOR_COUNT) {
+    cursor = IOM_CURSOR_DEFAULT;
+  }
+
+  SDL_Cursor *c = SDL_CreateSystemCursor((SDL_SystemCursor)cursor);
+  if (c) {
+    SDL_SetCursor(c);
+  }
+};
 
 extern s8 iom_quit() {
   SDL_GL_DestroyContext(gl_context);

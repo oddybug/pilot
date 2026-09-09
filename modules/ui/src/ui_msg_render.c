@@ -23,7 +23,7 @@ static struct pull_msg_e_render *ui_msg_mce_render(msg_T msg) {
     goto err;
   }
 
-  int i;
+  s32 i;
 
   u32 n_in;
   ui_msg_read_u32_r(msg, &n_in);
@@ -98,9 +98,4 @@ s32 ui_msg_pull_rm_add(void *stream, size_t size) {
 err:
   WARN("failed to add entry to pull msg in renderer");
   return 1;
-};
-
-msg_T ui_msg_push_request(const c8 *name, struct args *args) {
-  msg_T msg = ui_msg_create(name, args);
-  return msg;
 };

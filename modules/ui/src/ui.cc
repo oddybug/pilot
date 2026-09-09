@@ -34,7 +34,7 @@ s32 ui_start(int argc, char *argv[]) {
   // CEF applications have multiple sub-processes (render, GPU, etc) that share
   // the same executable. This function checks the command-line and, if this is
   // a sub-process, executes the appropriate logic.
-  int exit_code = CefExecuteProcess(main_args, app, nullptr);
+  s32 exit_code = CefExecuteProcess(main_args, app, nullptr);
   if (exit_code >= 0) {
     // The sub-process has completed so return here.
     exit(exit_code);
@@ -108,8 +108,8 @@ extern void ui_send_mouse_keyup(c16 key) {
   browser->GetHost()->SendKeyEvent(k_e);
 };
 
-void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p) {
-
+void ui_send_mouse_down(enum MOUSE_BTN mb, struct point_T m_p,
+                          u32 modifiers) {
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   CefRefPtr<CefBrowser> browser = handler->GetBrowser();
 
@@ -119,15 +119,35 @@ void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p) {
   CefMouseEvent m_e;
   m_e.x = m_p.x;
   m_e.y = m_p.y;
+  m_e.modifiers = modifiers;
 
   browser->GetHost()->SendMouseClickEvent(m_e, (cef_mouse_button_type_t)mb,
                                           false, 1);
+};
+
+void ui_send_mouse_up(enum MOUSE_BTN mb, struct point_T m_p, u32 modifiers) {
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  CefRefPtr<CefBrowser> browser = handler->GetBrowser();
+
+  if (!browser)
+    return;
+
+  CefMouseEvent m_e;
+  m_e.x = m_p.x;
+  m_e.y = m_p.y;
+  m_e.modifiers = modifiers;
 
   browser->GetHost()->SendMouseClickEvent(m_e, (cef_mouse_button_type_t)mb,
                                           true, 1);
 };
 
-void ui_send_mouse_event_motion(struct point_T m_p) {
+void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p) {
+
+  ui_send_mouse_down(mb, m_p, 0);
+  ui_send_mouse_up(mb, m_p, 0);
+};
+
+void ui_send_mouse_event_motion(struct point_T m_p, u32 modifiers) {
 
   CefMouseEvent m_e;
 
@@ -140,6 +160,7 @@ void ui_send_mouse_event_motion(struct point_T m_p) {
 
   m_e.x = m_p.x;
   m_e.y = m_p.y;
+  m_e.modifiers = modifiers;
   browser->GetHost()->SendMouseMoveEvent(m_e, false);
 };
 
@@ -156,6 +177,10 @@ void ui_close_browsers() {
 void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
                                              u32 height)) {
   SimpleHandler::GetInstance()->SetTextureCallback(clbk);
+};
+
+void ui_set_cursor_callback(void (*clbk)(s32 cursor_type)) {
+  SimpleHandler::GetInstance()->SetCursorCallback(clbk);
 };
 
 void ui_resize_window(u32 width, u32 height) {

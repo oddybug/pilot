@@ -11,6 +11,17 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
+#string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type_lower)
+#
+#if(build_type_lower STREQUAL "debug")
+#  message(STATUS "AddressSanitizer (ASan) enabled")
+#
+#  add_compile_options(-fsanitize=address -fno-omit-frame-pointer
+#                      -fsanitize-address-use-after-scope)
+#
+#  add_link_options(-fsanitize=address)
+#endif()
+
 #
 # CEF_ROOT setup. This variable must be set to locate the binary distribution.
 # TODO: Choose one of the below examples and comment out the rest.
@@ -125,6 +136,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/modules/render")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/modules/ui")
 
-#add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
 
 include(cmake/directories.cmake)

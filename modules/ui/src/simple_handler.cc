@@ -198,7 +198,7 @@ bool SimpleHandler::OnProcessMessageReceived(
       for (i = 0; i < pmb->out.n_args; i++)
         gen_list_push_back(values, &pmb->out.args[i]);
 
-      ui_msg_populate_r(msg_res,values);
+      ui_msg_populate_r(msg_res, values);
       msg_s = ui_msg_size(msg_res);
     }
 
@@ -380,6 +380,10 @@ void SimpleHandler::SetTextureCallback(TextureCallbackFn clbk) {
   text_callback_ = clbk;
 };
 
+void SimpleHandler::SetCursorCallback(CursorCallbackFn clbk) {
+  cursor_callback_ = clbk;
+};
+
 void SimpleHandler::ResizeBrowsers(u32 width, u32 height) {
   window_w = width;
   window_h = height;
@@ -490,3 +494,13 @@ void SimpleHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
 // TODO: to implement
 void SimpleHandler::OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                                TextInputMode input_mode) {}
+bool SimpleHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
+                                     CefCursorHandle cursor,
+                                     cef_cursor_type_t type,
+                                     const CefCursorInfo &custom_cursor_info) {
+  CEF_REQUIRE_UI_THREAD();
+  if (cursor_callback_) {
+    cursor_callback_(static_cast<s32>(type));
+  }
+  return false;
+};

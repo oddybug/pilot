@@ -61,6 +61,14 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
       return false;
     }
 
+    bool has_cb = arguments.size() > 1 && arguments[1]->IsFunction();
+    if (!has_cb && e->out.n_args > 0) {
+      ERROR("entry '%s' declares %u out-arg(s) but no callback was provided; "
+            "call dropped, browser not notified",
+            message_name.c_str(), e->out.n_args);
+      return false;
+    }
+
     s32 browser_id = context->GetBrowser()->GetIdentifier();
     MyRenderProcessHandler::CallbackKey key =
         std::make_pair(message_name, browser_id);
@@ -224,7 +232,7 @@ void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   CefRefPtr<CefV8Value> push_func =
       CefV8Value::CreateFunction("SetPushClbk", v8_handler);
 
-  app->SetValue("PullMessage", pull_func, V8_PROPERTY_ATTRIBUTE_NONE);
+  app->SetValue("PullMsgClbk", pull_func, V8_PROPERTY_ATTRIBUTE_NONE);
   app->SetValue("SetPushClbk", push_func, V8_PROPERTY_ATTRIBUTE_NONE);
 
   context->Exit();

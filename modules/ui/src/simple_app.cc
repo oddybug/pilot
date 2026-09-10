@@ -166,6 +166,9 @@ void SimpleApp::OnBeforeCommandLineProcessing(
   if (process_type.empty()) {
     command_line->AppendSwitchWithValue("ozone-platform", "x11");
     command_line->AppendSwitchWithValue("use-angle", "gl-egl");
+    command_line->AppendSwitchWithValue("remote-debugging-port", "9222");
+    command_line->AppendSwitchWithValue("remote-allow-origins", "*");
+    
   }
 };
 

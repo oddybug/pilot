@@ -78,6 +78,9 @@ const c8 *ui_args_e2s_(enum ARG_TYPE type) {
   case ARG_TYPE:
     return "ARG_TYPE";
     break;
+  case ARG_END:
+    return "ARG_END";
+    break;
   default:
     return "[WRONG_TYPE_PROVIDED]";
   }
@@ -123,6 +126,11 @@ static size_t ui_args_argsv_get_(struct args *args, va_list list) {
       break;
     case STRING:
       msg_size += ui_args_arg_size_(STRING, va_arg(list, c8 *));
+      break;
+    case ARG_END:
+      assert(0);
+      WARN("ARG_END is not a valid argument");
+      msg_size = 0;
       break;
     }
   }
@@ -255,6 +263,10 @@ static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l) {
       ui_msg_write_string_r(msg, value);
       break;
     }
+    case ARG_END:
+      assert(0);
+      WARN("ARG_END is not a valid argument");
+      break;
     }
     n = n->next;
     msg->i++;

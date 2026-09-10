@@ -34,7 +34,7 @@ static struct pull_msg_e_render *ui_msg_mce_render(msg_T msg) {
   else
     in = NULL;
 
-  if (!in && !n_in)
+  if (!in && n_in)
     goto err_in;
   for (i = 0; i < n_in; i++) {
     enum ARG_TYPE type;
@@ -52,7 +52,7 @@ static struct pull_msg_e_render *ui_msg_mce_render(msg_T msg) {
   else
     out = NULL;
 
-  if (!out && !n_out)
+  if (!out && n_out)
     goto err_out;
   for (i = 0; i < n_out; i++) {
     enum ARG_TYPE type;

@@ -11,7 +11,7 @@ extern "C" {
 
 #define DICC_SIZE 1024
 
-enum ARG_TYPE { U32 = 0, S32, STRING, ARG_TYPE };
+enum ARG_TYPE { U32 = 0, S32, STRING, ARG_TYPE, ARG_END = -1 };
 
 enum MSG_ACCESS { MSG_READ = 0, MSG_WRITE };
 

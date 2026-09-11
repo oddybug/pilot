@@ -36,12 +36,15 @@ s32 ren_create_texture(u8 *bitmap, s32 width, s32 height, s32 channels,
   case RGB:
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, bitmap);
+    break;
   case RGBA:
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, bitmap);
+    break;
   case BGRA:
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA, width, height, 0, GL_BGRA,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA,
                  GL_UNSIGNED_BYTE, bitmap);
+    break;
   default:
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, bitmap);
@@ -76,10 +79,13 @@ s32 ren_update_texture_bitmap(s32 id, u8 *bitmap) {
   switch (textures[id].type) {
   case RGB:
     format = GL_RGB;
+    break;
   case RGBA:
     format = GL_RGBA;
+    break;
   case BGRA:
     format = GL_BGRA;
+    break;
   default:
     format = GL_RGBA;
     break;
@@ -118,10 +124,13 @@ s32 ren_update_texture(s32 id, u8 *new_bitmap, s32 new_width, s32 new_height) {
   switch (textures[id].type) {
   case RGB:
     format = GL_RGB;
+    break;
   case RGBA:
     format = GL_RGBA;
+    break;
   case BGRA:
     format = GL_BGRA;
+    break;
   default:
     format = GL_RGBA;
     break;

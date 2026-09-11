@@ -313,7 +313,7 @@ msg_T ui_msg_get_fs(void *stream, size_t stream_s, struct args *args) {
   return msg;
 };
 
-extern msg_T ui_msg_get_fs_r(void *stream, size_t size) {
+msg_T ui_msg_get_fs_r(void *stream, size_t size) {
   assert(stream);
 
   msg_T msg = malloc(sizeof(struct msg));
@@ -348,7 +348,7 @@ err_msg:
   return NULL;
 };
 
-extern size_t ui_msg_size(msg_T msg) {
+size_t ui_msg_size(msg_T msg) {
   assert(msg && msg->name);
 
   if (msg->i < msg->args.n_args) {
@@ -358,9 +358,9 @@ extern size_t ui_msg_size(msg_T msg) {
   return msg->size;
 };
 
-extern void *ui_msg_bs(msg_T msg) { return msg->msg; };
+void *ui_msg_bs(msg_T msg) { return msg->msg; };
 
-extern msg_T ui_msg_push_create(const c8 *name) {
+msg_T ui_msg_push_create(const c8 *name) {
   map_T map = ui_msg_browser_push_m();
   struct push_msg_bme *pmbme = (struct push_msg_bme *)gen_map_find(map, name);
   if (!pmbme) {
@@ -372,7 +372,7 @@ extern msg_T ui_msg_push_create(const c8 *name) {
   return msg;
 };
 
-extern const c8 *ui_msg_name(msg_T msg) { return msg->name; };
+const c8 *ui_msg_name(msg_T msg) { return msg->name; };
 
 static s32 ui_args_check_(msg_T msg, enum ARG_TYPE t);
 
@@ -449,7 +449,7 @@ s32 ui_msg_write_str(msg_T msg, c8 *string) {
   return 1;
 };
 
-extern void ui_msg_free(msg_T msg) {
+void ui_msg_free(msg_T msg) {
   assert(msg);
   if (msg->args.args)
     free(msg->msg);
@@ -459,7 +459,7 @@ extern void ui_msg_free(msg_T msg) {
   free(msg);
 };
 
-extern void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->name); };
+void ui_msg_cpy_name(msg_T msg, c8 *name) { strcpy(name, msg->name); };
 
 void ui_msg_write_s32_r(msg_T msg, s32 val) {
   memcpy(msg->it, &val, sizeof(s32));
@@ -472,7 +472,7 @@ void ui_msg_write_u32_r(msg_T msg, u32 val) {
   msg->it += sizeof(u32);
 };
 
-extern void ui_msg_write_string_r(msg_T msg, const c8 *string) {
+void ui_msg_write_string_r(msg_T msg, const c8 *string) {
 
   size_t s_l = strlen(string);
   strcpy(msg->it, string);

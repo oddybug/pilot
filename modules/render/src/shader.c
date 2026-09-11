@@ -117,7 +117,7 @@ static s32 _ren_create_program(s32 vertex, s32 fragment) {
   return id;
 };
 
-extern s32 ren_create_program(const char *vertex_src,
+s32 ren_create_program(const char *vertex_src,
                               const char *fragment_src) {
   s32 fragment = _ren_create_fragment_shader(fragment_src);
   if (fragment == -1) {
@@ -199,7 +199,7 @@ static char *ren_file_to_str(const char *dir) {
   return src;
 };
 
-extern s32 ren_create_program_from_files(const char *vertex_src_dir,
+s32 ren_create_program_from_files(const char *vertex_src_dir,
                                          const char *fragment_src_dir) {
   const char *const v_src = ren_file_to_str(vertex_src_dir);
   const char *const f_src = ren_file_to_str(fragment_src_dir);
@@ -207,7 +207,7 @@ extern s32 ren_create_program_from_files(const char *vertex_src_dir,
   return ren_create_program(v_src, f_src);
 };
 
-extern s32 ren_delete_program(u32 program) {
+s32 ren_delete_program(u32 program) {
   assert(programs[program].id != 0);
   assert(programs[program].fs_id != 0);
   assert(programs[program].vs_id != 0);
@@ -230,24 +230,24 @@ extern s32 ren_delete_program(u32 program) {
   return 0;
 };
 
-extern void ren_bind_program(s32 id) { glUseProgram(id); };
+void ren_bind_program(s32 id) { glUseProgram(id); };
 
-extern void ren_program_set_s32(s32 id, const char *name, s32 value) {
+void ren_program_set_s32(s32 id, const char *name, s32 value) {
   glUniform1i(glGetUniformLocation(id, name), value);
 };
 
-extern void ren_program_set_f32(s32 id, const char *name, f32 value) {
+void ren_program_set_f32(s32 id, const char *name, f32 value) {
   glUniform1f(glGetUniformLocation(id, name), value);
 };
 
-extern void ren_program_set_vec2(s32 id, const char *name, vec2 value) {
+void ren_program_set_vec2(s32 id, const char *name, vec2 value) {
   glUniform2f(glGetUniformLocation(id, name), value[0], value[1]);
 };
 
-extern void ren_program_set_vec3(s32 id, const char *name, vec3 value) {
+void ren_program_set_vec3(s32 id, const char *name, vec3 value) {
   glUniform3f(glGetUniformLocation(id, name), value[0], value[1], value[2]);
 };
 
-extern void ren_program_set_mat4(s32 id, const char *name, const mat4 value) {
+void ren_program_set_mat4(s32 id, const char *name, const mat4 value) {
   glUniformMatrix4fv(glGetUniformLocation(id, name), 1, GL_FALSE, &value[0][0]);
 };

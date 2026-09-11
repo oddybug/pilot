@@ -85,7 +85,7 @@ err_e:
   return 1;
 };
 
-extern s32 ui_msg_push_new_entry(const c8 *name, struct args *out) {
+s32 ui_msg_push_new_entry(const c8 *name, struct args *out) {
   assert(out && name);
 
   map_T map = ui_msg_browser_push_m();
@@ -124,7 +124,7 @@ err_e:
 
 #define UI_MSG_MAX_ARGS 256
 
-extern s32 ui_msg_pull_new(const c8 *name,
+s32 ui_msg_pull_new(const c8 *name,
                            void (*callback)(msg_T msg, msg_T response)) {
   assert(name && callback);
 
@@ -188,7 +188,7 @@ static s32 ui_msg_pull_set_h(struct args *dst, va_list list) {
   return 0;
 };
 
-extern s32 ui_msg_pull_set_i_h(const c8 *name, ...) {
+s32 ui_msg_pull_set_i_h(const c8 *name, ...) {
   assert(name);
   map_T map = ui_msg_browser_pull_m();
   struct pull_msg_bme *e = (struct pull_msg_bme *)gen_map_find(map, name);
@@ -203,7 +203,7 @@ extern s32 ui_msg_pull_set_i_h(const c8 *name, ...) {
   return rc;
 };
 
-extern s32 ui_msg_pull_set_o_h(const c8 *name, ...) {
+s32 ui_msg_pull_set_o_h(const c8 *name, ...) {
   assert(name);
   map_T map = ui_msg_browser_pull_m();
   struct pull_msg_bme *e = (struct pull_msg_bme *)gen_map_find(map, name);

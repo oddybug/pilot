@@ -14,7 +14,7 @@ static struct serial_T *serial;
 
 struct entity_T entities[MAX_ENTITIES];
 
-extern u32 ren_create_entity() {
+u32 ren_create_entity() {
   if (serial == NULL) {
     serial = gen_serial_create_from(1);
   }
@@ -31,18 +31,18 @@ extern u32 ren_create_entity() {
   return id;
 }
 
-extern u32 get_entity_id(u32 entity) {
+u32 get_entity_id(u32 entity) {
   assert(entity != 0);
   return entities[entity].id;
 }
 
-extern void ren_entity_add_component(u32 entity, enum COMPONENT_TYPE type,
+void ren_entity_add_component(u32 entity, enum COMPONENT_TYPE type,
                                      u32 id) {
   assert(entity != 0);
   entities[entity].components[type] = id;
 }
 
-extern s32 ren_entity_get_component(u32 entity, enum COMPONENT_TYPE type) {
+s32 ren_entity_get_component(u32 entity, enum COMPONENT_TYPE type) {
   assert(entity != 0);
   return entities[entity].components[type];
 }

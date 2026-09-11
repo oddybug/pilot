@@ -32,7 +32,7 @@ typedef struct map *map_T;
  * if you used malloc or similars.
  * @return a pointer to the hashmap or NULL if failed to allocate memory
  */
-extern map_T gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
+map_T gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
                             u32 (*compare_fn)(const void *a, const void *b),
                             void (*free)(struct item_T *item));
 
@@ -42,7 +42,7 @@ extern map_T gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
  * @param map
  * @return returns 0 on succes 1 otherwise
  */
-extern s32 gen_map_free(map_T map);
+s32 gen_map_free(map_T map);
 
 /**
  * @brief get the size of the map
@@ -50,7 +50,7 @@ extern s32 gen_map_free(map_T map);
  * @param map
  * @return the size of the map. If map is NULL return value is -1;
  */
-extern s32 gen_map_get_size(map_T map);
+s32 gen_map_get_size(map_T map);
 
 /**
  * @brief Inserts a new value, key pair into the map. If the key already exists
@@ -61,7 +61,7 @@ extern s32 gen_map_get_size(map_T map);
  * @param value
  * @return 0 on succes 1 otherwise.
  */
-extern s32 gen_map_insert(map_T map, const void *key, void *value);
+s32 gen_map_insert(map_T map, const void *key, void *value);
 
 /**
  * @brief deletes item with key 'key' from the map.
@@ -70,7 +70,7 @@ extern s32 gen_map_insert(map_T map, const void *key, void *value);
  * @param key
  * @return returns 0 on succes 1 otherwise.
  */
-extern s32 gen_map_remove(map_T map, const void *key);
+s32 gen_map_remove(map_T map, const void *key);
 
 /**
  * @brief Try find if a value with assosiated key exists
@@ -79,7 +79,7 @@ extern s32 gen_map_remove(map_T map, const void *key);
  * @param key
  * @return NULL if key not in map or value otherwise.
  */
-extern void *gen_map_find(map_T map, const void *key);
+void *gen_map_find(map_T map, const void *key);
 
 /**
  * @brief check if 'it' is past the last item of the map
@@ -88,7 +88,7 @@ extern void *gen_map_find(map_T map, const void *key);
  * @param it
  * @return 1 if true 0 otherwise
  */
-extern s32 gen_map_it_is_end(map_T map, struct map_it_T *it);
+s32 gen_map_it_is_end(map_T map, struct map_it_T *it);
 
 /**
  * @brief set the iterator to the fist item of the map
@@ -96,7 +96,7 @@ extern s32 gen_map_it_is_end(map_T map, struct map_it_T *it);
  * @param map
  * @param it
  */
-extern void gen_map_it_set_begin(map_T map, struct map_it_T *it);
+void gen_map_it_set_begin(map_T map, struct map_it_T *it);
 
 /**
  * @brief Set it.next to the next item of the map
@@ -107,7 +107,7 @@ extern void gen_map_it_set_begin(map_T map, struct map_it_T *it);
  * @result 'it->current' and 'it->index' update to the next item_T. If no
  * further elements exist, `it->current` will be set to NULL.
  */
-extern void gen_map_it_get_next(map_T map, struct map_it_T *it);
+void gen_map_it_get_next(map_T map, struct map_it_T *it);
 
 #ifdef __cplusplus
 }

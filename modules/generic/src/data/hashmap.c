@@ -176,7 +176,7 @@ s32 gen_map_remove(map_T map, const void *key) {
   return 1;
 }
 
-extern void *gen_map_find(map_T map, const void *key) {
+void *gen_map_find(map_T map, const void *key) {
   assert(map && key);
 
   u32 hash = map->hash_fn(key);

@@ -93,7 +93,7 @@ void ui_send_mouse_keydown(c16 key) {
   browser->GetHost()->SendKeyEvent(k_e);
 }
 
-extern void ui_send_mouse_keyup(c16 key) {
+void ui_send_mouse_keyup(c16 key) {
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   CefRefPtr<CefBrowser> browser = handler->GetBrowser();
 

@@ -30,7 +30,7 @@ extern struct program_T programs[MAX_PROGRAMS];
  * @param src
  * @return the id of the shader created
  */
-extern s32 ren_create_shader(enum SHADER_TYPE type, const char *src);
+s32 ren_create_shader(enum SHADER_TYPE type, const char *src);
 
 /**
  * @brief creates shader program using fragments 'fragment_src' and vertexs
@@ -40,7 +40,7 @@ extern s32 ren_create_shader(enum SHADER_TYPE type, const char *src);
  * @param fragment
  * @return programs ID on succes and -1 on failure
  */
-extern s32 ren_create_program(const char *vertex_src, const char *fragment_src);
+s32 ren_create_program(const char *vertex_src, const char *fragment_src);
 
 /**
  * @brief creates shader program using fragments 'fragment_src_dir' and vertexs
@@ -50,7 +50,7 @@ extern s32 ren_create_program(const char *vertex_src, const char *fragment_src);
  * @param fragment
  * @return programs ID on succes and -1 on failure
  */
-extern s32 ren_create_program_from_files(const char *vertex_src_dir,
+s32 ren_create_program_from_files(const char *vertex_src_dir,
                                          const char *fragment_src_dir);
 
 /**
@@ -59,14 +59,14 @@ extern s32 ren_create_program_from_files(const char *vertex_src_dir,
  * @param program
  * @return 0 succes. Otherwise error.
  */
-extern s32 ren_delete_program(u32 program);
+s32 ren_delete_program(u32 program);
 
 /**
  * @brief bind hader program with id 'id'
  *
  * @param id
  */
-extern void ren_bind_program(s32 id);
+void ren_bind_program(s32 id);
 
 // void setBool(s32 id, const char *name, bool value);
 
@@ -78,7 +78,7 @@ extern void ren_bind_program(s32 id);
  * @param name
  * @param value
  */
-extern void ren_program_set_s32(s32 id, const char *name, s32 value);
+void ren_program_set_s32(s32 id, const char *name, s32 value);
 
 /**
  * @brief set uniform value 'name' to shader program with id 'id' and value
@@ -88,7 +88,7 @@ extern void ren_program_set_s32(s32 id, const char *name, s32 value);
  * @param name
  * @param value
  */
-extern void ren_program_set_f32(s32 id, const char *name, f32 value);
+void ren_program_set_f32(s32 id, const char *name, f32 value);
 
 /**
  * @brief set uniform value 'name' to shader program with id 'id' and value
@@ -98,7 +98,7 @@ extern void ren_program_set_f32(s32 id, const char *name, f32 value);
  * @param name
  * @param value
  */
-extern void ren_program_set_vec2(s32 id, const char *name, vec2 value);
+void ren_program_set_vec2(s32 id, const char *name, vec2 value);
 
 /**
  * @brief set uniform value 'name' to shader program with id 'id' and value
@@ -108,7 +108,7 @@ extern void ren_program_set_vec2(s32 id, const char *name, vec2 value);
  * @param name
  * @param value
  */
-extern void ren_program_set_vec3(s32 id, const char *name, vec3 value);
+void ren_program_set_vec3(s32 id, const char *name, vec3 value);
 
 /**
  * @brief set uniform value 'name' to shader program with id 'id' and value
@@ -118,7 +118,7 @@ extern void ren_program_set_vec3(s32 id, const char *name, vec3 value);
  * @param name
  * @param value
  */
-extern void ren_program_set_mat4(s32 id, const char *name, const mat4 value);
+void ren_program_set_mat4(s32 id, const char *name, const mat4 value);
 
 #ifdef __cplusplus
 }

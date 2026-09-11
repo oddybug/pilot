@@ -27,7 +27,7 @@ extern struct entity_T entities[MAX_ENTITIES];
  *
  * @return Returns 0 on failure. Otherwise id of entity.
  */
-extern u32 ren_create_entity();
+u32 ren_create_entity();
 
 /**
  * @brief returns entity ID. Undefined behaivour when passing NULL pointer.
@@ -35,12 +35,12 @@ extern u32 ren_create_entity();
  * @param entity
  * @return
  */
-extern u32 get_entity_id(u32 entity);
+u32 get_entity_id(u32 entity);
 
-extern void ren_entity_add_component(u32 entity, enum COMPONENT_TYPE type,
+void ren_entity_add_component(u32 entity, enum COMPONENT_TYPE type,
                                      u32 component);
 
-extern s32 ren_entity_get_component(u32 entity, enum COMPONENT_TYPE type);
+s32 ren_entity_get_component(u32 entity, enum COMPONENT_TYPE type);
 
 #ifdef __cplusplus
 }

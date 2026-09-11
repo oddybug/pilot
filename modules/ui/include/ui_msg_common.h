@@ -38,13 +38,13 @@ void ui_msg_free(msg_T msg);
 
 size_t ui_msg_size(msg_T msg);
 
-extern void *ui_msg_bs(msg_T msg);
+void *ui_msg_bs(msg_T msg);
 
 msg_T ui_msg_push_create(const c8 *name);
 
 void ui_msg_cpy_name(msg_T msg, c8 *name);
 
-extern const c8 *ui_msg_name(msg_T msg);
+const c8 *ui_msg_name(msg_T msg);
 
 // access == WRITE
 

@@ -13,31 +13,31 @@ enum MOUSE_BTN {
   MBTN_RIGHT,
 };
 
-extern s32 ui_start(int argc, char *argv[]);
+s32 ui_start(int argc, char *argv[]);
 
-extern s32 ui_get_texture_id();
+s32 ui_get_texture_id();
 
-extern void ui_message_loop();
+void ui_message_loop();
 
-extern void ui_send_mouse_keydown(c16 key);
+void ui_send_mouse_keydown(c16 key);
 
-extern void ui_send_mouse_keyup(c16 key);
+void ui_send_mouse_keyup(c16 key);
 
-extern void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p);
+void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p);
 
-extern void ui_send_mouse_down(enum MOUSE_BTN mb, struct point_T m_p,
+void ui_send_mouse_down(enum MOUSE_BTN mb, struct point_T m_p,
                                u32 modifiers);
 
-extern void ui_send_mouse_up(enum MOUSE_BTN mb, struct point_T m_p,
+void ui_send_mouse_up(enum MOUSE_BTN mb, struct point_T m_p,
                              u32 modifiers);
 
-extern void ui_send_mouse_event_motion(struct point_T m_p, u32 modifiers);
+void ui_send_mouse_event_motion(struct point_T m_p, u32 modifiers);
 
-extern bool ui_can_close();
+bool ui_can_close();
 
-extern void ui_close();
+void ui_close();
 
-extern void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
+void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
                                                     u32 height));
 enum UI_CURSOR {
   UI_CURSOR_POINTER = 0,
@@ -93,8 +93,8 @@ enum UI_CURSOR {
   UI_CURSOR_NUM_VALUES,
 };
 
-extern void ui_set_cursor_callback(void (*clbk)(s32 cursor_type));
-extern void ui_resize_window(u32 width, u32 height);
+void ui_set_cursor_callback(void (*clbk)(s32 cursor_type));
+void ui_resize_window(u32 width, u32 height);
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,9 +106,9 @@ map_T ui_msg_browser_pull_m();
 
 map_T ui_msg_render_pull_m();
 
-extern s32 ui_msg_push_send(msg_T msg);
+s32 ui_msg_push_send(msg_T msg);
 
-extern s32 ui_msg_push_listeners(const c8 *name);
+s32 ui_msg_push_listeners(const c8 *name);
 
 #ifdef __cplusplus
 }

@@ -27,7 +27,7 @@ extern struct camera_T main_camera;
 /**
  * @brief initializes camera values to 0
  */
-extern void res_init_camera();
+void res_init_camera();
 
 /**
  * @brief rotate the looking direction of camera. Pivot point is relative to
@@ -35,21 +35,21 @@ extern void res_init_camera();
  *
  * @param euler_angles
  */
-extern void ren_rotate_camera(vec3 euler_angles);
+void ren_rotate_camera(vec3 euler_angles);
 
 /**
  * @brief adds translaiton to camera position. Translation relative to camera.
  *
  * @param translation
  */
-extern void ren_translate_camera(vec3 translation);
+void ren_translate_camera(vec3 translation);
 
 /**
  * @brief set camera fov
  *
  * @param fov
  */
-extern void ren_set_camera_fov(f32 fov);
+void ren_set_camera_fov(f32 fov);
 
 /**
  * @brief set near and back planes of camera fustrum
@@ -57,21 +57,21 @@ extern void ren_set_camera_fov(f32 fov);
  * @param near
  * @param far
  */
-extern void ren_set_camera_planes(f32 near, f32 far);
+void ren_set_camera_planes(f32 near, f32 far);
 
 /**
  * @brief Sets camera projection. See CAMERA_PROJECTION for available modes.
  *
  * @param projection: see enum CAMERA_PROJECTION for values
  */
-extern void ren_set_camera_projection(s32 projection);
+void ren_set_camera_projection(s32 projection);
 
 /**
  * @brief set camera aspect ratio
  *
  * @param ratio
  */
-extern void ren_set_camera_aspect_ratio(f32 ratio);
+void ren_set_camera_aspect_ratio(f32 ratio);
 
 /**
  * @brief set camera aspect ratio with width and height
@@ -79,7 +79,7 @@ extern void ren_set_camera_aspect_ratio(f32 ratio);
  * @param width
  * @param height
  */
-extern void ren_set_camera_aspect_ratio_wh(f32 width, f32 height);
+void ren_set_camera_aspect_ratio_wh(f32 width, f32 height);
 
 /**
  * @brief returns the view matrix of the cmaera in out_view
@@ -87,7 +87,7 @@ extern void ren_set_camera_aspect_ratio_wh(f32 width, f32 height);
  * @param out_view
  * @return
  */
-extern void ren_get_view_matrix(mat4 out_view);
+void ren_get_view_matrix(mat4 out_view);
 
 /**
  * @brief return projection matrix depending on enum CAMERA_PROJECTION. Result
@@ -95,16 +95,16 @@ extern void ren_get_view_matrix(mat4 out_view);
  *
  * @param out_projection
  */
-extern void ren_get_projection_matrix(mat4 *out_projection);
+void ren_get_projection_matrix(mat4 *out_projection);
 
-extern void ren_camera_set_position(f32 x, f32 y, f32 z);
+void ren_camera_set_position(f32 x, f32 y, f32 z);
 
-extern void ren_camera_set_rotation(f32 yaw, f32 pitch, f32 roll);
+void ren_camera_set_rotation(f32 yaw, f32 pitch, f32 roll);
 
 
-extern void ren_camera_set_position_v(vec3 pos);
+void ren_camera_set_position_v(vec3 pos);
 
-extern void ren_camera_set_rotation_v(vec3 euler_angles);
+void ren_camera_set_rotation_v(vec3 euler_angles);
 
 #ifdef __cplusplus
 }

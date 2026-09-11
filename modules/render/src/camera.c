@@ -46,7 +46,7 @@ void ren_set_camera_aspect_ratio_wh(f32 width, f32 height) {
   main_camera.aspect_ratio = width / height;
 };
 
-extern void ren_get_view_matrix(mat4 out_view) {
+void ren_get_view_matrix(mat4 out_view) {
   glm_mat4_identity(out_view);
 
   glm_rotate(out_view, -main_camera.euler_angles[2], (vec3){0.0, 0.0, 1.0});
@@ -58,7 +58,7 @@ extern void ren_get_view_matrix(mat4 out_view) {
   glm_translate(out_view, negative_pos);
 }
 
-extern void ren_get_projection_matrix(mat4 *out_projection) {
+void ren_get_projection_matrix(mat4 *out_projection) {
   switch (main_camera.projectio_type) {
   case PERSPECTIVE:
     glm_perspective(main_camera.fov, main_camera.aspect_ratio,
@@ -73,25 +73,25 @@ extern void ren_get_projection_matrix(mat4 *out_projection) {
   }
 };
 
-extern void ren_camera_set_position(f32 x, f32 y, f32 z) {
+void ren_camera_set_position(f32 x, f32 y, f32 z) {
   main_camera.position[0] = x;
   main_camera.position[1] = y;
   main_camera.position[2] = z;
 };
 
-extern void ren_camera_set_rotation(f32 yaw, f32 pitch, f32 roll) {
+void ren_camera_set_rotation(f32 yaw, f32 pitch, f32 roll) {
   main_camera.euler_angles[0] = yaw;
   main_camera.euler_angles[1] = pitch;
   main_camera.euler_angles[2] = roll;
 };
 
-extern void ren_camera_set_position_v(vec3 pos) {
+void ren_camera_set_position_v(vec3 pos) {
   main_camera.position[0] = pos[0];
   main_camera.position[1] = pos[1];
   main_camera.position[2] = pos[2];
 }
 
-extern void ren_camera_set_rotation_v(vec3 euler_angles) {
+void ren_camera_set_rotation_v(vec3 euler_angles) {
   main_camera.euler_angles[0] = euler_angles[0];
   main_camera.euler_angles[1] = euler_angles[1];
   main_camera.euler_angles[2] = euler_angles[2];

@@ -107,6 +107,9 @@ map_T ui_msg_browser_pull_m();
 map_T ui_msg_render_pull_m();
 
 extern s32 ui_msg_push_send(msg_T msg);
+
+extern s32 ui_msg_push_listeners(const c8 *name);
+
 #ifdef __cplusplus
 }
 #endif

@@ -73,10 +73,12 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     MyRenderProcessHandler::CallbackKey key =
         std::make_pair(message_name, browser_id);
 
-    context->Enter();
-    render_handler_->pull_callback_map_[key] =
-        std::make_pair(context, arguments[1]);
-    context->Exit();
+    if (has_cb) {
+      context->Enter();
+      render_handler_->pull_callback_map_[key] =
+          std::make_pair(context, arguments[1]);
+      context->Exit();
+    }
 
     CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
         message_name.c_str(), e, ConvertV8ListToCefList(arguments));

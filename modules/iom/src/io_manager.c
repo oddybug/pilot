@@ -253,6 +253,43 @@ static void iom_alert_all_targets_(SDL_Event *event) {
   }
 }
 
+static s32 capture_target_ = 0; // pinned target id, 0 = none
+static u32 buttons_held_ = 0;   // bitmask of held SDL mouse buttons
+
+static u32 iom_button_bit_(u8 button) {
+  switch (button) {
+  case SDL_BUTTON_LEFT:
+    return 1u << 0;
+  case SDL_BUTTON_MIDDLE:
+    return 1u << 1;
+  case SDL_BUTTON_RIGHT:
+    return 1u << 2;
+  default:
+    return 1u << 7;
+  }
+};
+
+static void iom_route_(SDL_Event *event) {
+  s32 id = capture_target_ != 0 ? capture_target_ : current_target_;
+  s32 served = 0;
+  if (id != 0) {
+    targets[id].iom_callback_fn(event);
+    served = 1;
+  }
+  s32 i;
+  for (i = 0; i < MAX_TARGETS; i++) {
+    if (targets[i].id == 0 || targets[i].id == id)
+      continue;
+    if (targets[i].flags & TARGET_CALLBACK_ALWAYS) {
+      targets[i].iom_callback_fn(event);
+      served = 1;
+    }
+  }
+  if (!served) {
+    WARN("No target selected. Mouse and keyboard undefined behaivour.");
+  }
+};
+
 extern void iom_poll_events() {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
@@ -265,9 +302,33 @@ extern void iom_poll_events() {
     case SDL_EVENT_WINDOW_RESIZED:
       iom_alert_all_targets_(&event);
       break;
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+      buttons_held_ = 0;
+      capture_target_ = 0;
+      break;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      if (capture_target_ == 0) {
+        struct point_T mouse_p = {.x = (s32)event.button.x,
+                                  .y = (s32)event.button.y};
+        s32 hit = iom_select_target_(mouse_p);
+        if (hit != 0)
+          capture_target_ = hit;
+      }
+      buttons_held_ |= iom_button_bit_(event.button.button);
+      iom_route_(&event);
+      break;
+    }
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+      iom_route_(&event);
+      buttons_held_ &= ~iom_button_bit_(event.button.button);
+      if (buttons_held_ == 0)
+        capture_target_ = 0;
+      break;
     case SDL_EVENT_MOUSE_MOTION: {
-      struct point_T mouse_p = {.x = event.motion.x, .y = event.motion.y};
-      (void)iom_select_target_(mouse_p);
+      struct point_T mouse_p = {.x = (s32)event.motion.x,
+                                .y = (s32)event.motion.y};
+      if (capture_target_ == 0)
+        (void)iom_select_target_(mouse_p);
     }
       [[fallthrough]];
     case SDL_EVENT_KEY_DOWN:
@@ -276,11 +337,7 @@ extern void iom_poll_events() {
       }
       [[fallthrough]];
     default:
-      if (current_target_ == 0) {
-        WARN("No target selected. Mouse and keyboard undefined behaivour.");
-      } else {
-        targets[current_target_].iom_callback_fn(&event);
-      }
+      iom_route_(&event);
       break;
     }
   }
@@ -312,7 +369,22 @@ void iom_set_target(s32 id, struct rect_T bounds, s32 z,
   targets[id].id = id;
   targets[id].bounds = bounds;
   targets[id].z = z;
+  targets[id].flags = 0;
   targets[id].iom_callback_fn = iom_callback_fn;
+};
+
+void iom_target_set_flag(s32 id, u32 flags) {
+  assert(id >= 0 && id < MAX_TARGETS && targets[id].id != 0);
+  targets[id].flags |= flags;
+};
+
+void iom_target_clear_flag(s32 id, u32 flags) {
+  assert(id >= 0 && id < MAX_TARGETS && targets[id].id != 0);
+  targets[id].flags &= ~flags;
+};
+
+extern s32 iom_routing_target(void) {
+  return capture_target_ != 0 ? capture_target_ : current_target_;
 };
 
 extern struct point_T iom_get_window_size() {

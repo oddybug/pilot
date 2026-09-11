@@ -243,6 +243,16 @@ s32 ui_msg_push_send(msg_T msg) {
   return 0;
 };
 
+s32 ui_msg_push_listeners(const c8 *name) {
+  map_T map = ui_msg_browser_push_m();
+  struct push_msg_bme *bme = (struct push_msg_bme *)gen_map_find(map, name);
+  if (!bme)
+    return -1;
+  if (!bme->render)
+    return 0;
+  return (s32)gen_list_size(bme->render);
+};
+
 void ui_close() {
   // TODO: Fix segfault
   // ui_ipc_free();

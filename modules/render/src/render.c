@@ -1,3 +1,4 @@
+#include <GLES2/gl2.h>
 #include <glad/gl.h>
 
 #include <render.h>
@@ -81,6 +82,10 @@ static void ren_draw_ui_frame_() {
   glDisable(GL_SCISSOR_TEST);
   glViewport(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
              ren_viewport_.h);
+
+  if (active_buffers.depth) {
+    glEnable(GL_DEPTH_TEST);
+  }
 };
 
 s8 ren_draw_frame() {

@@ -9,7 +9,6 @@ extern "C" {
 
 typedef struct queue *queue_T;
 
-
 queue_T gen_queue_new(void);
 
 void gen_queue_free(queue_T q, void (*free_value_fn)(void *value));

@@ -7,17 +7,19 @@
 # EGL find_package(PkgConfig REQUIRED) pkg_check_modules(EGL REQUIRED egl)
 
 # DEMO
-file(GLOB_RECURSE APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/global.c"
-     "${THIRD_PARTY_DIR}/stb/stb_image.h")
+file(
+  GLOB_RECURSE
+  APP_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/pilot.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/global.c"
+  "${THIRD_PARTY_DIR}/stb/stb_image.h")
 
 add_executable(pilot "${APP_SOURCES}")
 
-#if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-#  target_compile_options(pilot PRIVATE -fsanitize=address
-#                                       -fno-omit-frame-pointer)
-#  target_link_options(pilot PRIVATE -fsanitize=address)
-#endif()
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug") target_compile_options(pilot PRIVATE
+# -fsanitize=address -fno-omit-frame-pointer) target_link_options(pilot PRIVATE
+# -fsanitize=address) endif()
 
 # target_sources(pilot PRIVATE "${APP_SOURCES}")
 

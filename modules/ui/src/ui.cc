@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstring>
 
-s32 ui_start(int argc, char *argv[]) {
+s32 ui_init(int argc, char *argv[]) {
   // Create a copy of |argv| on Linux because Chromium mangles the value
   // internally (see issue #620).
   CefScopedArgArray scoped_arg_array(argc, argv);

@@ -216,6 +216,14 @@ bool SimpleHandler::OnProcessMessageReceived(
   return false;
 }
 
+void SimpleHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
+                                         CefRefPtr<CefFrame> frame,
+                                         CefRefPtr<CefContextMenuParams> params,
+                                         CefRefPtr<CefMenuModel> model) {
+  CEF_REQUIRE_UI_THREAD();
+  model->Clear();
+}
+
 void SimpleHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
                                   const CefString &title) {
   CEF_REQUIRE_UI_THREAD();

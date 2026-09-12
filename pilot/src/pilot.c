@@ -463,6 +463,7 @@ void pilot_viewport_clbk(msg_T msg, msg_T response) {
   if (y_gl < 0)
     y_gl = 0;
   ren_set_viewport((struct rect_T){.x = x, .y = y_gl, .w = w, .h = h});
+  ren_set_camera_aspect_ratio_wh((f32)w, (f32)h);
   s32 first = !g_cfg.gl_ready;
   g_cfg.gl_bounds.x = x;
   g_cfg.gl_bounds.y = y_gl;

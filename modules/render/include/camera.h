@@ -5,10 +5,16 @@ extern "C" {
 #include <cglm/cglm.h>
 #include <types.h>
 
+enum CAMERA_MODE { CAMERA_FPV = 0, CAMERA_ORBIT };
+
 struct camera_T {
   vec3 position;
   vec3 front;
   vec3 euler_angles;
+  vec3 orbit_angles;
+  vec3 orbit_origin;
+  f32 orbit_radius;
+  enum CAMERA_MODE mode;
 
   f32 fov;
   f32 aspect_ratio;
@@ -105,6 +111,20 @@ void ren_camera_set_rotation(f32 yaw, f32 pitch, f32 roll);
 void ren_camera_set_position_v(vec3 pos);
 
 void ren_camera_set_rotation_v(vec3 euler_angles);
+
+void ren_camera_mode(enum CAMERA_MODE mode);
+
+void ren_camera_orbit(vec3 delta_angles);
+
+void ren_camera_orbit_o(vec3 origin);
+
+void ren_camera_orbit_a(vec3 angles);
+
+void ren_camera_orbit_r(f32 radius);
+
+f32 ren_camera_orbit_get_r(void);
+
+f32 ren_camera_orbit_get_yaw(void);
 
 #ifdef __cplusplus
 }

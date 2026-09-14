@@ -20,4 +20,5 @@ void pilot_cfg_init(void) {
   g_cfg.gl_bounds.w = 0;
   g_cfg.gl_bounds.h = 0;
   g_cfg.gl_ready = 0;
+  g_cfg.gl_enabled = 1;
 }

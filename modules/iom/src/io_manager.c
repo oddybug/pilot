@@ -350,6 +350,11 @@ void iom_resize_target(s32 id, struct rect_T bounds) {
   targets[id].bounds = bounds;
 };
 
+void iom_target_z(s32 id, s32 z) {
+  assert(targets[id].id != 0);
+  targets[id].z = z;
+};
+
 s32 iom_create_target() {
   if (serial == NULL) {
     serial = gen_serial_create_from(1);

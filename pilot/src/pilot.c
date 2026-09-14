@@ -477,10 +477,50 @@ void pilot_viewport_clbk(msg_T msg, msg_T response) {
   INFO("gl-viewport: %d,%d %d x %d", x, y, w, h);
   (void)response;
 };
+
+#define PILOT_GL_Z_TOP 2
+#define PILOT_GL_Z_LOW 0
+
+static void pilot_viewport_enabled_clbk(msg_T msg, msg_T response);
+
+static void pilot_viewport_enabled_clbk(msg_T msg, msg_T response) {
+  s32 v;
+  ui_msg_arg_read_s32(msg, &v);
+  v = v != 0;
+  g_cfg.gl_enabled = v;
+  ren_set_gl_enabled(v);
+  iom_target_z(g_gl_target, v ? PILOT_GL_Z_TOP : PILOT_GL_Z_LOW);
+  INFO("gl-viewport-enabled: %d", v);
+  (void)response;
+};
+
+static void pilot_skybox_clbk(msg_T msg, msg_T response);
+
+static void pilot_skybox_clbk(msg_T msg, msg_T response) {
+  u32 top;
+  u32 bottom;
+  s32 stiffness;
+  ui_msg_arg_read_u32(msg, &top);
+  ui_msg_arg_read_u32(msg, &bottom);
+  ui_msg_arg_read_s32(msg, &stiffness);
+  ren_skybox_set(top, bottom, stiffness);
+  INFO("skybox-set: top 0x%06X bottom 0x%06X stiffness %d", top, bottom,
+       stiffness);
+  (void)response;
+};
+
 void pilot_set_msg_calls() {
   ui_msg_pull_new("gl-viewport", pilot_viewport_clbk);
   ui_msg_pull_set_i("gl-viewport", S32, S32, S32, S32);
   ui_msg_pull_set_o("gl-viewport");
+
+  ui_msg_pull_new("gl-viewport-enabled", pilot_viewport_enabled_clbk);
+  ui_msg_pull_set_i("gl-viewport-enabled", S32);
+  ui_msg_pull_set_o("gl-viewport-enabled");
+
+  ui_msg_pull_new("skybox-set", pilot_skybox_clbk);
+  ui_msg_pull_set_i("skybox-set", U32, U32, S32);
+  ui_msg_pull_set_o("skybox-set");
 
   enum ARG_TYPE log_o[1] = {STRING};
   struct args log_args_o = (struct args){.args = log_o, .n_args = 1};

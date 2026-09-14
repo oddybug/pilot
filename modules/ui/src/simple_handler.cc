@@ -217,9 +217,9 @@ bool SimpleHandler::OnProcessMessageReceived(
 }
 
 void SimpleHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
-                                         CefRefPtr<CefFrame> frame,
-                                         CefRefPtr<CefContextMenuParams> params,
-                                         CefRefPtr<CefMenuModel> model) {
+                                        CefRefPtr<CefFrame> frame,
+                                        CefRefPtr<CefContextMenuParams> params,
+                                        CefRefPtr<CefMenuModel> model) {
   CEF_REQUIRE_UI_THREAD();
   model->Clear();
 }
@@ -451,6 +451,11 @@ void SimpleHandler::init_e_map() {
 void SimpleHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                             PaintElementType type, const RectList &dirtyRects,
                             const void *buffer, int width, int height) {
+  // temporary fix. Turns out CEF returns more than one dirty rect for things
+  // like input popouts
+  if (type != PET_VIEW) {
+    return;
+  }
 
   text_callback_((u8 *)buffer, width, height);
 }
@@ -503,9 +508,9 @@ void SimpleHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
 void SimpleHandler::OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                                TextInputMode input_mode) {}
 bool SimpleHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
-                                     CefCursorHandle cursor,
-                                     cef_cursor_type_t type,
-                                     const CefCursorInfo &custom_cursor_info) {
+                                   CefCursorHandle cursor,
+                                   cef_cursor_type_t type,
+                                   const CefCursorInfo &custom_cursor_info) {
   CEF_REQUIRE_UI_THREAD();
   if (cursor_callback_) {
     cursor_callback_(static_cast<s32>(type));

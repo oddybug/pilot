@@ -1,6 +1,8 @@
 #include <GLES2/gl2.h>
 #include <glad/gl.h>
 
+#include <math.h>
+
 #include <render.h>
 
 #include "camera.h"
@@ -26,6 +28,59 @@ static struct rect_T ui_viewport_;
 static s32 ui_object_;
 static s32 ui_program_;
 static s32 ui_texture_;
+static s32 gl_enabled_ = 1;
+
+static s32 sky_object_ = 0;
+static s32 sky_program_ = 0;
+static f32 sky_top_[3] = {0.16f, 0.24f, 0.38f};
+static f32 sky_bottom_[3] = {0.03f, 0.04f, 0.06f};
+static s32 sky_stiff_ = 2000;
+
+void ren_set_gl_enabled(s32 enabled) { gl_enabled_ = enabled; }
+
+void ren_skybox_set(u32 top_hex, u32 bottom_hex, s32 stiffness) {
+  sky_top_[0] = ((top_hex >> 16) & 0xFF) / 255.0f;
+  sky_top_[1] = ((top_hex >> 8) & 0xFF) / 255.0f;
+  sky_top_[2] = (top_hex & 0xFF) / 255.0f;
+  sky_bottom_[0] = ((bottom_hex >> 16) & 0xFF) / 255.0f;
+  sky_bottom_[1] = ((bottom_hex >> 8) & 0xFF) / 255.0f;
+  sky_bottom_[2] = (bottom_hex & 0xFF) / 255.0f;
+  if (stiffness >= 0) {
+    sky_stiff_ = stiffness;
+  }
+}
+
+static void ren_draw_skybox_(mat4 view) {
+  if (sky_program_ == 0) {
+    sky_program_ = ren_create_program_from_files(
+        SHADERS_SOURCE_DIR "skybox_v.glsl", SHADERS_SOURCE_DIR "skybox_f.glsl");
+  }
+  if (sky_object_ == 0) {
+    sky_object_ = ren_primitive_create_hud_plane();
+  }
+  struct program_T sky_p = programs[sky_program_];
+  struct object_T sky_o = objects[sky_object_];
+
+  glDisable(GL_DEPTH_TEST);
+  glUseProgram(sky_p.id);
+
+  vec3 top = {sky_top_[0], sky_top_[1], sky_top_[2]};
+  vec3 bottom = {sky_bottom_[0], sky_bottom_[1], sky_bottom_[2]};
+  f32 sn = sky_stiff_ / 4000.0f;
+  ren_program_set_vec3(sky_p.id, "u_top", top);
+  ren_program_set_vec3(sky_p.id, "u_bottom", bottom);
+  ren_program_set_f32(sky_p.id, "u_morph", sn * sn);
+  ren_program_set_mat4(sky_p.id, "u_view", view);
+  ren_program_set_f32(sky_p.id, "u_tan_half_fov", tanf(main_camera.fov * 0.5f));
+  ren_program_set_f32(sky_p.id, "u_aspect", main_camera.aspect_ratio);
+
+  glBindVertexArray(sky_o.VAO);
+  glDrawArrays(GL_TRIANGLES, 0, sky_o.n_triangles * 3);
+
+  if (active_buffers.depth) {
+    glEnable(GL_DEPTH_TEST);
+  }
+}
 
 /**
  * @brief Clean all OpenGL buffers that are active.
@@ -76,15 +131,18 @@ static void ren_draw_ui_frame_() {
   glBindVertexArray(ui_o.VAO);
   glDrawArrays(GL_TRIANGLES, 0, ui_o.n_triangles * 3);
 
-  glEnable(GL_SCISSOR_TEST);
-  glScissor(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w, ren_viewport_.h);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glDisable(GL_SCISSOR_TEST);
-  glViewport(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
-             ren_viewport_.h);
+  if (gl_enabled_) {
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
+              ren_viewport_.h);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_SCISSOR_TEST);
+    glViewport(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
+               ren_viewport_.h);
 
-  if (active_buffers.depth) {
-    glEnable(GL_DEPTH_TEST);
+    if (active_buffers.depth) {
+      glEnable(GL_DEPTH_TEST);
+    }
   }
 };
 
@@ -100,6 +158,12 @@ s8 ren_draw_frame() {
   s32 i;
 
   ren_draw_ui_frame_();
+
+  if (!gl_enabled_) {
+    return 0;
+  }
+
+  ren_draw_skybox_(view);
 
   // TODO: SAFETY CHECK AND REDESING ENTIRELY
   for (i = 0; i < MAX_ENTITIES; i++) {

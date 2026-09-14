@@ -18,6 +18,7 @@ struct pilot_cfg_T {
   s32 cef_texture;
   struct rect_T gl_bounds;
   s32 gl_ready;
+  s32 gl_enabled;
 };
 
 extern struct pilot_cfg_T g_cfg;

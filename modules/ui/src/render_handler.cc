@@ -82,6 +82,9 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
 
     CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
         message_name.c_str(), e, ConvertV8ListToCefList(arguments));
+    if (!msg) {
+      return false;
+    }
     context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
     return true;
 
@@ -536,7 +539,7 @@ bool MyRenderProcessHandler::CheckType(enum ARG_TYPE c_type,
     break;
   case VTYPE_INT:
     INFO("INT");
-    return c_type == S32 || U32 ? true : false;
+    return c_type == S32 || c_type == U32;
     break;
   case VTYPE_DOUBLE:
     INFO("DOUBLE");

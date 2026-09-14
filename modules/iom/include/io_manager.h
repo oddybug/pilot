@@ -38,6 +38,8 @@ s32 iom_create_target();
 void iom_set_target(s32 id, struct rect_T bounds, s32 z,
                            void (*iom_callback_fn)(SDL_Event *e));
 
+void iom_target_z(s32 id, s32 z);
+
 void iom_target_set_flag(s32 id, u32 flags);
 
 void iom_target_clear_flag(s32 id, u32 flags);

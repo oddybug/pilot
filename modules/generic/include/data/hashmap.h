@@ -1,3 +1,8 @@
+// TODO: This implementation can have several improvements. Deletion handler and
+// user freedom to chose if it wants to reuse memory or not not just copy all.
+// The default should be copy all to let the user not worry about the . Secon of
+// all implementation can use list_T for buckets rows.
+
 #ifndef HASHMAP_H
 #define HASHMAP_H
 
@@ -33,8 +38,8 @@ typedef struct map *map_T;
  * @return a pointer to the hashmap or NULL if failed to allocate memory
  */
 map_T gen_map_create(u32 size, u32 (*hash_fn)(const void *key),
-                            u32 (*compare_fn)(const void *a, const void *b),
-                            void (*free)(struct item_T *item));
+                     u32 (*compare_fn)(const void *a, const void *b),
+                     void (*free)(struct item_T *item));
 
 /**
  * @brief deletes the map

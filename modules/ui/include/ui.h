@@ -23,8 +23,8 @@ bool ui_can_close();
 
 void ui_close();
 
-void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
-                                             u32 height));
+void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, s32 isSubImage,
+                                             struct rect_T rect));
 
 #ifdef __cplusplus
 extern "C" {

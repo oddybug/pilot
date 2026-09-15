@@ -17,6 +17,7 @@ struct program_T {
   u32 id;
   u32 vs_id;
   u32 fs_id;
+  const c8 *name;
 };
 
 extern struct program_T programs[MAX_PROGRAMS];
@@ -40,7 +41,8 @@ s32 ren_create_shader(enum SHADER_TYPE type, const char *src);
  * @param fragment
  * @return programs ID on succes and -1 on failure
  */
-s32 ren_create_program(const char *vertex_src, const char *fragment_src);
+s32 ren_create_program(const c8 *name, const char *vertex_src,
+                              const char *fragment_src);
 
 /**
  * @brief creates shader program using fragments 'fragment_src_dir' and vertexs
@@ -50,7 +52,7 @@ s32 ren_create_program(const char *vertex_src, const char *fragment_src);
  * @param fragment
  * @return programs ID on succes and -1 on failure
  */
-s32 ren_create_program_from_files(const char *vertex_src_dir,
+s32 ren_create_program_from_files(const c8 *name, const char *vertex_src_dir,
                                          const char *fragment_src_dir);
 
 /**

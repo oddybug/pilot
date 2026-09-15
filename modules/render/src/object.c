@@ -1,5 +1,6 @@
 #include <glad/gl.h>
 
+#include <data/atom.h>
 #include <data/serial.h>
 
 #include "object.h"
@@ -31,24 +32,24 @@ static f32 cube_v[] = {
     -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
     -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f};
 
-static f32 cube_n[] = { // Back
-    0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f,
-    0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f,
-    // Front
-    0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-    0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-    // Left
-    -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-    -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-    // Right
-    1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-    // Bottom
-    0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
-    0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
-    // Top
-    0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-    0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+static f32 cube_n[] = {// Back
+                       0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f,
+                       0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f,
+                       // Front
+                       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+                       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+                       // Left
+                       -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+                       -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+                       // Right
+                       1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                       1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                       // Bottom
+                       0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+                       0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+                       // Top
+                       0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                       0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
 
 // tm stands for texture mappung
 static f32 cube_tm[] = {
@@ -86,7 +87,9 @@ struct object_T objects[MAX_OBJECTS];
 
 static struct serial_T *serial;
 
-s32 ren_primitive_create_cube() {
+// We are not reusing the VAO and VBO for primitives. Also more advanced
+// rendering techinques can be considered to (instancing).
+s32 ren_primitive_create_cube(const c8 *name) {
   if (serial == NULL) {
     serial = gen_serial_create_from(1);
   }
@@ -101,6 +104,7 @@ s32 ren_primitive_create_cube() {
 
   glm_vec3_zero(objects[id].position);
   glm_vec3_zero(objects[id].rotation);
+  objects[id].name = name && name[0] ? gen_atom(name) : NULL;
 
   glGenVertexArrays(1, &objects[id].VAO);
   glBindVertexArray(objects[id].VAO);
@@ -126,7 +130,7 @@ s32 ren_primitive_create_cube() {
   return id;
 };
 
-s32 ren_primitive_create_hud_plane() {
+s32 ren_primitive_create_hud_plane(const c8 *name) {
   if (serial == NULL) {
     serial = gen_serial_create_from(1);
   }
@@ -141,6 +145,7 @@ s32 ren_primitive_create_hud_plane() {
 
   glm_vec3_zero(objects[id].position);
   glm_vec3_zero(objects[id].rotation);
+  objects[id].name = name && name[0] ? gen_atom(name) : NULL;
 
   glGenVertexArrays(1, &objects[id].VAO);
   glBindVertexArray(objects[id].VAO);
@@ -168,6 +173,37 @@ s32 ren_primitive_create_hud_plane() {
   glBindVertexArray(0);
   return id;
 }
+s32 ren_primitive_create_plane(const c8 *name) {
+  if (serial == NULL) {
+    serial = gen_serial_create_from(1);
+  }
+  assert(serial != NULL);
+  s32 id;
+  if (gen_serial_stamp(serial, &id) != 0)
+    return -1;
+  objects[id].n_triangles = 2;
+  glm_vec3_zero(objects[id].position);
+  glm_vec3_zero(objects[id].rotation);
+  objects[id].name = name && name[0] ? gen_atom(name) : NULL;
+  glGenVertexArrays(1, &objects[id].VAO);
+  glBindVertexArray(objects[id].VAO);
+  glGenBuffers(3, objects[id].VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, objects[id].VBO[0]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(plane_v), plane_v, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void *)0);
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, objects[id].VBO[1]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(plane_n), plane_n, GL_STATIC_DRAW);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void *)0);
+  glEnableVertexAttribArray(1);
+  glBindBuffer(GL_ARRAY_BUFFER, objects[id].VBO[2]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(plane_tm), plane_tm, GL_STATIC_DRAW);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(f32), (void *)0);
+  glEnableVertexAttribArray(2);
+  glBindVertexArray(0);
+  return id;
+}
+
 void ren_get_model_mat(s32 id, mat4 model) {
 
   glm_mat4_identity(model);

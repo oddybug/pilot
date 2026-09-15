@@ -1,5 +1,6 @@
 #include "log.h"
 #include <assert.h>
+#include <data/atom.h>
 #include <entity.h>
 
 #include <errno.h>
@@ -14,7 +15,7 @@ static struct serial_T *serial;
 
 struct entity_T entities[MAX_ENTITIES];
 
-u32 ren_create_entity() {
+u32 ren_create_entity(const c8 *name) {
   if (serial == NULL) {
     serial = gen_serial_create_from(1);
   }
@@ -28,6 +29,7 @@ u32 ren_create_entity() {
     return 0;
 
   entities[id].id = id;
+  entities[id].name = name && name[0] ? gen_atom(name) : NULL;
   return id;
 }
 

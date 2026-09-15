@@ -8,8 +8,7 @@ extern "C" {
 #include <types.h>
 
 enum COMPONENT_TYPE {
-  COMPONENT_PROGRAM = 0,
-  COMPONENT_MATERIAL,
+  COMPONENT_MATERIAL = 0,
   COMPONENT_OBJECT,
   COMPONENT_COUNT
 };
@@ -17,6 +16,7 @@ enum COMPONENT_TYPE {
 struct entity_T {
   u32 components[COMPONENT_COUNT];
   u32 id;
+  const c8 *name;
 };
 
 #define MAX_ENTITIES 1024
@@ -27,7 +27,7 @@ extern struct entity_T entities[MAX_ENTITIES];
  *
  * @return Returns 0 on failure. Otherwise id of entity.
  */
-u32 ren_create_entity();
+u32 ren_create_entity(const c8 *name);
 
 /**
  * @brief returns entity ID. Undefined behaivour when passing NULL pointer.

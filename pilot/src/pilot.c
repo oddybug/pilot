@@ -122,7 +122,325 @@ void pilot_test_levels_fnc(msg_T msg, msg_T response) {
   pilot_ui_log(PILOT_UI_INFO, "info test message");
   pilot_ui_log(PILOT_UI_WARN, "warn test message");
   pilot_ui_log(PILOT_UI_ERROR, "error test message");
-  (void)response; // no out-args: browser sends no response
+  (void)response;
+};
+
+static void pilot_json_escape_(const char *src, char *dst, size_t cap);
+
+static void pilot_get_program_clbk(msg_T msg, msg_T response) {
+  s32 id;
+  ui_msg_arg_read_s32(msg, &id);
+  if (id <= 0 || id >= MAX_PROGRAMS || !programs[id].id) {
+    ui_msg_populate(response, (c8 *)"{}");
+    return;
+  }
+  const c8 *n = programs[id].name;
+  char esc[128];
+  char out[1024];
+  if (n)
+    pilot_json_escape_(n, esc, sizeof(esc));
+  else
+    esc[0] = '\0';
+  if (n && n[0])
+    snprintf(
+        out, sizeof(out),
+        "{\"id\":%d,\"name\":\"%s\",\"gl_id\":%u,\"vs_id\":%u,\"fs_id\":%u}",
+        id, esc, programs[id].id, programs[id].vs_id, programs[id].fs_id);
+  else
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"gl_id\":%u,\"vs_id\":%u,\"fs_id\":%u}", id,
+             programs[id].id, programs[id].vs_id, programs[id].fs_id);
+  ui_msg_populate(response, (c8 *)out);
+}
+
+static void pilot_get_object_clbk(msg_T msg, msg_T response) {
+  s32 id;
+  ui_msg_arg_read_s32(msg, &id);
+  if (id <= 0 || id >= MAX_OBJECTS ||
+      (!objects[id].VAO && !objects[id].n_triangles)) {
+    ui_msg_populate(response, (c8 *)"{}");
+    return;
+  }
+  const c8 *n = objects[id].name;
+  char esc[128];
+  char out[1024];
+  if (n)
+    pilot_json_escape_(n, esc, sizeof(esc));
+  else
+    esc[0] = '\0';
+  if (n && n[0])
+    snprintf(
+        out, sizeof(out),
+        "{\"id\":%d,\"name\":\"%s\",\"vao\":%u,\"n_tri\":%u,\"vbo\":[%u,%u,%u],"
+        "\"pos\":[%.2f,%.2f,%.2f],\"rot\":[%.2f,%.2f,%.2f]}",
+        id, esc, objects[id].VAO, objects[id].n_triangles, objects[id].VBO[0],
+        objects[id].VBO[1], objects[id].VBO[2], objects[id].position[0],
+        objects[id].position[1], objects[id].position[2],
+        objects[id].rotation[0], objects[id].rotation[1],
+        objects[id].rotation[2]);
+  else
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"vao\":%u,\"n_tri\":%u,\"vbo\":[%u,%u,%u],"
+             "\"pos\":[%.2f,%.2f,%.2f],\"rot\":[%.2f,%.2f,%.2f]}",
+             id, objects[id].VAO, objects[id].n_triangles, objects[id].VBO[0],
+             objects[id].VBO[1], objects[id].VBO[2], objects[id].position[0],
+             objects[id].position[1], objects[id].position[2],
+             objects[id].rotation[0], objects[id].rotation[1],
+             objects[id].rotation[2]);
+  ui_msg_populate(response, (c8 *)out);
+}
+
+static void pilot_get_texture_clbk(msg_T msg, msg_T response) {
+  s32 id;
+  ui_msg_arg_read_s32(msg, &id);
+  if (id <= 0 || id >= MAX_TEXTURES || !textures[id].gl_id) {
+    ui_msg_populate(response, (c8 *)"{}");
+    return;
+  }
+  const c8 *n = textures[id].name;
+  char esc[128];
+  char out[1024];
+  if (n)
+    pilot_json_escape_(n, esc, sizeof(esc));
+  else
+    esc[0] = '\0';
+  const char *ts = textures[id].type == RGB    ? "RGB"
+                   : textures[id].type == RGBA ? "RGBA"
+                   : textures[id].type == BGRA ? "BGRA"
+                                               : "UNKNOWN";
+  if (n && n[0])
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"name\":\"%s\",\"gl_id\":%u,\"w\":%d,\"h\":%d,"
+             "\"type\":\"%s\"}",
+             id, esc, textures[id].gl_id, textures[id].width,
+             textures[id].height, ts);
+  else
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"gl_id\":%u,\"w\":%d,\"h\":%d,\"type\":\"%s\"}", id,
+             textures[id].gl_id, textures[id].width, textures[id].height, ts);
+  ui_msg_populate(response, (c8 *)out);
+}
+
+static void pilot_get_material_clbk(msg_T msg, msg_T response) {
+  s32 id;
+  ui_msg_arg_read_s32(msg, &id);
+  if (id <= 0 || id >= MAX_MATERIALS ||
+      (!materials[id].texture && !materials[id].program)) {
+    ui_msg_populate(response, (c8 *)"{}");
+    return;
+  }
+  const c8 *n = materials[id].name;
+  char esc[128];
+  char out[1024];
+  if (n)
+    pilot_json_escape_(n, esc, sizeof(esc));
+  else
+    esc[0] = '\0';
+  s32 tid = materials[id].texture;
+  s32 pid = materials[id].program;
+  const c8 *tn = (tid > 0 && tid < MAX_TEXTURES) ? textures[tid].name : NULL;
+  const c8 *pn = (pid > 0 && pid < MAX_PROGRAMS) ? programs[pid].name : NULL;
+  char tesc[128], pesc[128];
+  if (tn)
+    pilot_json_escape_(tn, tesc, sizeof(tesc));
+  else
+    tesc[0] = '\0';
+  if (pn)
+    pilot_json_escape_(pn, pesc, sizeof(pesc));
+  else
+    pesc[0] = '\0';
+  if (n && n[0])
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"name\":\"%s\",\"program\":%d,\"programName\":\"%s\","
+             "\"texture\":%d,\"textureName\":\"%s\"}",
+             id, esc, pid, pesc, tid, tesc);
+  else
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"program\":%d,\"programName\":\"%s\",\"texture\":%d,"
+             "\"textureName\":\"%s\"}",
+             id, pid, pesc, tid, tesc);
+  ui_msg_populate(response, (c8 *)out);
+}
+
+static void pilot_get_entity_clbk(msg_T msg, msg_T response) {
+  s32 id;
+  ui_msg_arg_read_s32(msg, &id);
+  if (id <= 0 || id >= MAX_ENTITIES || !entities[id].id) {
+    ui_msg_populate(response, (c8 *)"{}");
+    return;
+  }
+  const c8 *n = entities[id].name;
+  char esc[128];
+  char out[1024];
+  if (n)
+    pilot_json_escape_(n, esc, sizeof(esc));
+  else
+    esc[0] = '\0';
+  s32 m = entities[id].components[COMPONENT_MATERIAL];
+  s32 o = entities[id].components[COMPONENT_OBJECT];
+  s32 p = (m > 0 && m < MAX_MATERIALS) ? materials[m].program : 0;
+  const c8 *pn = (p > 0 && p < MAX_PROGRAMS) ? programs[p].name : NULL;
+  const c8 *mn = (m > 0 && m < MAX_MATERIALS) ? materials[m].name : NULL;
+  const c8 *on = (o > 0 && o < MAX_OBJECTS) ? objects[o].name : NULL;
+  char pesc[128], mesc[128], oesc[128];
+  if (pn)
+    pilot_json_escape_(pn, pesc, sizeof(pesc));
+  else
+    pesc[0] = '\0';
+  if (mn)
+    pilot_json_escape_(mn, mesc, sizeof(mesc));
+  else
+    mesc[0] = '\0';
+  if (on)
+    pilot_json_escape_(on, oesc, sizeof(oesc));
+  else
+    oesc[0] = '\0';
+  if (n && n[0])
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"name\":\"%s\",\"program\":%d,\"programName\":\"%s\","
+             "\"material\":%d,\"materialName\":\"%s\",\"object\":%d,"
+             "\"objectName\":\"%s\"}",
+             id, esc, p, pesc, m, mesc, o, oesc);
+  else
+    snprintf(out, sizeof(out),
+             "{\"id\":%d,\"program\":%d,\"programName\":\"%s\",\"material\":%d,"
+             "\"materialName\":\"%s\",\"object\":%d,\"objectName\":\"%s\"}",
+             id, p, pesc, m, mesc, o, oesc);
+  ui_msg_populate(response, (c8 *)out);
+};
+
+static void pilot_set_entity_material_clbk(msg_T msg, msg_T response) {
+  s32 e_id, m_id;
+  ui_msg_arg_read_s32(msg, &e_id);
+  ui_msg_arg_read_s32(msg, &m_id);
+  if (e_id <= 0 || e_id >= MAX_ENTITIES || !entities[e_id].id) {
+    WARN("set-entity-material: bad entity %d", e_id);
+    return;
+  }
+  if (m_id <= 0 || m_id >= MAX_MATERIALS ||
+      (!materials[m_id].program && !materials[m_id].texture)) {
+    WARN("set-entity-material: bad material %d", m_id);
+    return;
+  }
+  ren_entity_add_component((u32)e_id, COMPONENT_MATERIAL, (u32)m_id);
+  (void)response;
+};
+
+static void pilot_json_escape_(const char *src, char *dst, size_t cap) {
+  size_t o = 0;
+  for (size_t i = 0; src[i] && o + 2 < cap; i++) {
+    if (src[i] == '"' || src[i] == '\\') {
+      dst[o++] = '\\';
+      dst[o++] = src[i];
+    } else if ((unsigned char)src[i] < 0x20) {
+      dst[o++] = ' ';
+    } else {
+      dst[o++] = src[i];
+    }
+  }
+  dst[o] = '\0';
+}
+
+static void pilot_render_list_json_(char *buf, size_t cap, s32 *ids,
+                                    const c8 **names, u32 n) {
+  size_t off = 0;
+  off += snprintf(buf + off, cap - off, "[");
+  for (u32 i = 0; i < n; i++) {
+    char esc[128];
+    if (names[i])
+      pilot_json_escape_(names[i], esc, sizeof(esc));
+    else
+      esc[0] = '\0';
+    if (names[i])
+      off +=
+          snprintf(buf + off, cap > off ? cap - off : 0,
+                   "%s{\"id\":%d,\"name\":\"%s\"}", i ? "," : "", ids[i], esc);
+    else
+      off += snprintf(buf + off, cap > off ? cap - off : 0, "%s{\"id\":%d}",
+                      i ? "," : "", ids[i]);
+  }
+  snprintf(buf + off, cap > off ? cap - off : 0, "]");
+}
+
+static void pilot_list_programs_clbk(msg_T msg, msg_T response) {
+  (void)msg;
+  s32 ids[MAX_PROGRAMS];
+  const c8 *names[MAX_PROGRAMS];
+  u32 n = 0;
+  for (s32 i = 1; i < MAX_PROGRAMS; i++)
+    if (programs[i].id) {
+      ids[n] = i;
+      names[n] = programs[i].name;
+      n++;
+    }
+  char json[24576];
+  pilot_render_list_json_(json, sizeof(json), ids, names, n);
+  ui_msg_populate(response, (c8 *)json);
+}
+
+static void pilot_list_objects_clbk(msg_T msg, msg_T response) {
+  (void)msg;
+  s32 ids[MAX_OBJECTS];
+  const c8 *names[MAX_OBJECTS];
+  u32 n = 0;
+  for (s32 i = 1; i < MAX_OBJECTS; i++)
+    if (objects[i].VAO || objects[i].n_triangles) {
+      ids[n] = i;
+      names[n] = objects[i].name;
+      n++;
+    }
+  char json[24576];
+  pilot_render_list_json_(json, sizeof(json), ids, names, n);
+  ui_msg_populate(response, (c8 *)json);
+}
+
+static void pilot_list_textures_clbk(msg_T msg, msg_T response) {
+  (void)msg;
+  s32 ids[MAX_TEXTURES];
+  const c8 *names[MAX_TEXTURES];
+  u32 n = 0;
+  for (s32 i = 1; i < MAX_TEXTURES; i++)
+    if (textures[i].gl_id) {
+      ids[n] = i;
+      names[n] = textures[i].name;
+      n++;
+    }
+  char json[24576];
+  pilot_render_list_json_(json, sizeof(json), ids, names, n);
+  ui_msg_populate(response, (c8 *)json);
+}
+
+static void pilot_list_materials_clbk(msg_T msg, msg_T response) {
+  (void)msg;
+  s32 ids[MAX_MATERIALS];
+  const c8 *names[MAX_MATERIALS];
+  u32 n = 0;
+  for (s32 i = 1; i < MAX_MATERIALS; i++)
+    if (materials[i].texture || materials[i].program ||
+        materials[i].has_color) {
+      ids[n] = i;
+      names[n] = materials[i].name;
+      n++;
+    }
+  char json[24576];
+  pilot_render_list_json_(json, sizeof(json), ids, names, n);
+  ui_msg_populate(response, (c8 *)json);
+}
+
+static void pilot_list_entities_clbk(msg_T msg, msg_T response) {
+  (void)msg;
+  s32 ids[MAX_ENTITIES];
+  const c8 *names[MAX_ENTITIES];
+  u32 n = 0;
+  for (s32 i = 1; i < MAX_ENTITIES; i++)
+    if (entities[i].id) {
+      ids[n] = i;
+      names[n] = entities[i].name;
+      n++;
+    }
+  char json[24576];
+  pilot_render_list_json_(json, sizeof(json), ids, names, n);
+  ui_msg_populate(response, (c8 *)json);
 };
 
 static u32 pilot_sdl_button_to_mod(u8 button) {
@@ -220,12 +538,12 @@ void pilot_ui_cursor_clbk(s32 cursor_type) {
   iom_set_cursor(pilot_ui_cursor_to_iom(cursor_type));
 }
 
-s32 pilot_create_texture(const char *file) {
+s32 pilot_create_texture(const c8 *name, const char *file) {
   s32 width, height, nr_channels;
   u8 *data = stbi_load(file, &width, &height, &nr_channels, 0);
   if (data) {
 
-    s32 id = ren_create_texture(data, width, height, nr_channels, RGBA);
+    s32 id = ren_create_texture(name, data, width, height, nr_channels, RGBA);
     stbi_image_free(data);
     return id;
   } else {
@@ -349,8 +667,7 @@ static void pilot_sdl_gl_callback(SDL_Event *e) {
       f32 s = PILOT_ORBIT_PAN_SENS * dist;
       f32 rx = cosf(yaw);
       f32 rz = -sinf(yaw);
-      vec3 delta = {-((f32)e->motion.xrel) * s * rx,
-                    ((f32)e->motion.yrel) * s,
+      vec3 delta = {-((f32)e->motion.xrel) * s * rx, ((f32)e->motion.yrel) * s,
                     -((f32)e->motion.xrel) * s * rz};
       ren_translate_camera(delta);
     } else {
@@ -522,6 +839,50 @@ void pilot_set_msg_calls() {
   ui_msg_pull_set_i("skybox-set", U32, U32, S32);
   ui_msg_pull_set_o("skybox-set");
 
+  ui_msg_pull_new("render-list-programs", pilot_list_programs_clbk);
+  ui_msg_pull_set_i("render-list-programs");
+  ui_msg_pull_set_o("render-list-programs", STRING);
+
+  ui_msg_pull_new("render-list-objects", pilot_list_objects_clbk);
+  ui_msg_pull_set_i("render-list-objects");
+  ui_msg_pull_set_o("render-list-objects", STRING);
+
+  ui_msg_pull_new("render-list-textures", pilot_list_textures_clbk);
+  ui_msg_pull_set_i("render-list-textures");
+  ui_msg_pull_set_o("render-list-textures", STRING);
+
+  ui_msg_pull_new("render-list-materials", pilot_list_materials_clbk);
+  ui_msg_pull_set_i("render-list-materials");
+  ui_msg_pull_set_o("render-list-materials", STRING);
+
+  ui_msg_pull_new("render-list-entities", pilot_list_entities_clbk);
+  ui_msg_pull_set_i("render-list-entities");
+  ui_msg_pull_set_o("render-list-entities", STRING);
+
+  ui_msg_pull_new("render-get-program", pilot_get_program_clbk);
+  ui_msg_pull_set_i("render-get-program", S32);
+  ui_msg_pull_set_o("render-get-program", STRING);
+
+  ui_msg_pull_new("render-get-object", pilot_get_object_clbk);
+  ui_msg_pull_set_i("render-get-object", S32);
+  ui_msg_pull_set_o("render-get-object", STRING);
+
+  ui_msg_pull_new("render-get-texture", pilot_get_texture_clbk);
+  ui_msg_pull_set_i("render-get-texture", S32);
+  ui_msg_pull_set_o("render-get-texture", STRING);
+
+  ui_msg_pull_new("render-get-material", pilot_get_material_clbk);
+  ui_msg_pull_set_i("render-get-material", S32);
+  ui_msg_pull_set_o("render-get-material", STRING);
+
+  ui_msg_pull_new("render-get-entity", pilot_get_entity_clbk);
+  ui_msg_pull_set_i("render-get-entity", S32);
+  ui_msg_pull_set_o("render-get-entity", STRING);
+
+  ui_msg_pull_new("set-entity-material", pilot_set_entity_material_clbk);
+  ui_msg_pull_set_i("set-entity-material", S32, S32);
+  ui_msg_pull_set_o("set-entity-material");
+
   enum ARG_TYPE log_o[1] = {STRING};
   struct args log_args_o = (struct args){.args = log_o, .n_args = 1};
   ui_msg_push_new_entry("pilot-log", &log_args_o);
@@ -529,21 +890,24 @@ void pilot_set_msg_calls() {
   // ui_msg_push_set_o();
 }
 
-void pilot_ui_texture_clbk(u8 *bitmap, u32 width, u32 height) {
-  struct rect_T b = {.x = 0, .y = 0, .w = (s32)width, .h = (s32)height};
-  if (g_cfg.cef_texture == 0) {
-    s32 id = ren_create_texture(bitmap, (s32)width, (s32)height, 4, BGRA);
+void pilot_ui_texture_clbk(u8 *bitmap, s32 isSubImage, struct rect_T rect) {
+  if (!g_cfg.cef_texture && !isSubImage) {
+    s32 id = ren_create_texture(NULL, bitmap, rect.w, rect.h, 4, BGRA);
     if (id <= 0) {
       ERROR("cef texture create failed");
       return;
     }
-    ren_set_ui_background(id, b);
+    ren_set_ui_background(id, rect);
     g_cfg.cef_texture = id;
-    g_cfg.ui_bounds = b;
     return;
   }
-  g_cfg.ui_bounds = b;
-  ren_update_ui_background(b, bitmap);
+
+  if (!isSubImage) {
+    ren_update_ui_background(rect, bitmap);
+  } else {
+    if (g_cfg.cef_texture)
+      ren_update_ui_background_sub(rect, bitmap);
+  }
 }
 
 static void pilot_start_camera();
@@ -564,20 +928,35 @@ void pilot_init_scene() {
 
   pilot_start_camera();
 
-  s32 texture_id = pilot_create_texture(TEXTURES_SOURCE_DIR "gato-joel.png");
+  s32 texture_id =
+      pilot_create_texture("gat joel", TEXTURES_SOURCE_DIR "gato-joel.png");
 
-  s32 p_id =
-      ren_create_program_from_files(SHADERS_SOURCE_DIR "vertex_texture.glsl",
-                                    SHADERS_SOURCE_DIR "fragment_texture.glsl");
+  s32 p_id = ren_create_program_from_files(
+      "default", SHADERS_SOURCE_DIR "vertex_texture.glsl",
+      SHADERS_SOURCE_DIR "fragment_texture.glsl");
 
-  s32 e1 = ren_create_entity();
-  s32 cube = ren_primitive_create_cube();
-  s32 m_id = ren_create_material();
+  s32 e1 = ren_create_entity("cube-1");
+  s32 cube = ren_primitive_create_cube("cube");
+  s32 m_id = ren_create_material("default-mat");
+  ren_material_set_program(m_id, p_id);
   ren_material_set_texture(m_id, texture_id);
 
   ren_entity_add_component(e1, COMPONENT_MATERIAL, m_id);
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
-  ren_entity_add_component(e1, COMPONENT_PROGRAM, p_id);
+
+  s32 p_color =
+      ren_create_program_from_files("color", SHADERS_SOURCE_DIR "vertex.glsl",
+                                    SHADERS_SOURCE_DIR "fragment_color.glsl");
+  s32 m_color = ren_create_material("color-mat");
+  ren_material_set_program(m_color, p_color);
+  vec3 red = {0.9f, 0.2f, 0.2f};
+  ren_material_set_color(m_color, red);
+
+  s32 e2 = ren_create_entity("cube-color");
+  s32 cube2 = ren_primitive_create_cube("cube-color");
+  objects[cube2].position[0] = 1.5f;
+  ren_entity_add_component(e2, COMPONENT_MATERIAL, m_color);
+  ren_entity_add_component(e2, COMPONENT_OBJECT, cube2);
 };
 
 void pilot_create_targets() {
@@ -586,13 +965,31 @@ void pilot_create_targets() {
   g_ui_target = iom_create_target();
 
   struct rect_T b_ui = g_cfg.ui_bounds;
-  // !URGENT
   iom_set_target(g_ui_target, b_ui, 1, pilot_sdl_ui_callback);
-  // The UI keeps receiving every event (typing survives mouse drift);
-  // the GL panel does not track.
   iom_target_set_flag(g_ui_target, TARGET_CALLBACK_ALWAYS);
 
-  // GL target stays zero-sized until the first gl-viewport message arrives.
   struct rect_T b_gl = {.x = 0, .y = 0, .w = 0, .h = 0};
   iom_set_target(g_gl_target, b_gl, 2, pilot_sdl_gl_callback);
+
+  g_popup_target = iom_create_target();
+  iom_set_target(g_popup_target, b_gl, -1, pilot_sdl_ui_callback);
+  iom_target_set_flag(g_popup_target, TARGET_CALLBACK_NEVER);
+}
+
+void pilot_popup_show(s32 show) {
+  if (!g_popup_target)
+    return;
+  if (show) {
+    iom_target_z(g_popup_target, 3);
+  } else {
+    iom_resize_target(g_popup_target, (struct rect_T){0, 0, 0, 0});
+    iom_target_z(g_popup_target, -1);
+  }
+}
+
+void pilot_popup_size(s32 x, s32 y, s32 w, s32 h) {
+  if (!g_popup_target)
+    return;
+  iom_resize_target(g_popup_target, (struct rect_T){x, y, w, h});
+  iom_target_z(g_popup_target, 3);
 }

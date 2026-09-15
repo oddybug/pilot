@@ -3,9 +3,11 @@
 struct pilot_cfg_T g_cfg;
 
 s32 g_hud_m_id;
-
 s32 g_gl_target;
+
 s32 g_ui_target;
+
+s32 g_popup_target;
 
 void pilot_cfg_init(void) {
   g_cfg.win_w = PILOT_WIN_DEFAULT_W;

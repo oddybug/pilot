@@ -18,16 +18,17 @@ struct object_T {
 
   vec3 position;
   vec3 rotation;
+  const c8 *name;
 };
 
 #define MAX_OBJECTS 1024
 extern struct object_T objects[MAX_OBJECTS];
 
-s32 ren_primitive_create_cube();
+s32 ren_primitive_create_cube(const c8 *name);
 
-s32 ren_primitive_create_hud_plane();
+s32 ren_primitive_create_hud_plane(const c8 *name);
 
-s32 ren_primitive_create_plane();
+s32 ren_primitive_create_plane(const c8 *name);
 
 s32 ren_delete_object(s32 id);
 

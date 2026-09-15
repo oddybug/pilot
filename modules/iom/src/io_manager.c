@@ -272,13 +272,15 @@ static u32 iom_button_bit_(u8 button) {
 static void iom_route_(SDL_Event *event) {
   s32 id = capture_target_ != 0 ? capture_target_ : current_target_;
   s32 served = 0;
-  if (id != 0) {
+  if (id != 0 && !(targets[id].flags & TARGET_CALLBACK_NEVER)) {
     targets[id].iom_callback_fn(event);
     served = 1;
   }
   s32 i;
   for (i = 0; i < MAX_TARGETS; i++) {
     if (targets[i].id == 0 || targets[i].id == id)
+      continue;
+    if ((targets[i].flags & TARGET_CALLBACK_NEVER))
       continue;
     if (targets[i].flags & TARGET_CALLBACK_ALWAYS) {
       targets[i].iom_callback_fn(event);

@@ -4,6 +4,7 @@
 
 #include <GL/gl.h>
 #include <assert.h>
+#include <data/atom.h>
 #include <data/serial.h>
 #include <stdlib.h>
 
@@ -11,8 +12,8 @@ struct texture_T textures[MAX_TEXTURES];
 
 static struct serial_T *serial;
 
-s32 ren_create_texture(u8 *bitmap, s32 width, s32 height, s32 channels,
-                       enum TEXTURE_TYPE type) {
+s32 ren_create_texture(const c8 *name, u8 *bitmap, s32 width, s32 height,
+                       s32 channels, enum TEXTURE_TYPE type) {
 
   if (serial == NULL) {
     serial = gen_serial_create_from(1);
@@ -58,6 +59,7 @@ s32 ren_create_texture(u8 *bitmap, s32 width, s32 height, s32 channels,
   textures[id].width = width;
   textures[id].height = height;
   textures[id].type = type;
+  textures[id].name = name && name[0] ? gen_atom(name) : NULL;
 
   return id;
 }
@@ -162,6 +164,7 @@ s32 ren_delete_texture(s32 id) {
   textures[id].width = 0;
   textures[id].height = 0;
   textures[id].type = 0;
+  textures[id].name = NULL;
 
   return 0;
 }

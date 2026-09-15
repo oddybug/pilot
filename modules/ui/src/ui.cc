@@ -108,8 +108,7 @@ void ui_send_mouse_keyup(c16 key) {
   browser->GetHost()->SendKeyEvent(k_e);
 };
 
-void ui_send_mouse_down(enum MOUSE_BTN mb, struct point_T m_p,
-                          u32 modifiers) {
+void ui_send_mouse_down(enum MOUSE_BTN mb, struct point_T m_p, u32 modifiers) {
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   CefRefPtr<CefBrowser> browser = handler->GetBrowser();
 
@@ -174,8 +173,8 @@ void ui_close_browsers() {
   handler->CloseAllBrowsers();
 }
 
-void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, u32 width,
-                                             u32 height)) {
+void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, s32 isSubImage,
+                                             struct rect_T rect)) {
   SimpleHandler::GetInstance()->SetTextureCallback(clbk);
 };
 

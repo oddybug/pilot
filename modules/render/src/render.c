@@ -53,10 +53,11 @@ void ren_skybox_set(u32 top_hex, u32 bottom_hex, s32 stiffness) {
 static void ren_draw_skybox_(mat4 view) {
   if (sky_program_ == 0) {
     sky_program_ = ren_create_program_from_files(
-        SHADERS_SOURCE_DIR "skybox_v.glsl", SHADERS_SOURCE_DIR "skybox_f.glsl");
+        "skybox", SHADERS_SOURCE_DIR "skybox_v.glsl",
+        SHADERS_SOURCE_DIR "skybox_f.glsl");
   }
   if (sky_object_ == 0) {
-    sky_object_ = ren_primitive_create_hud_plane();
+    sky_object_ = ren_primitive_create_hud_plane(NULL);
   }
   struct program_T sky_p = programs[sky_program_];
   struct object_T sky_o = objects[sky_object_];
@@ -174,12 +175,14 @@ s8 ren_draw_frame() {
     }
 
     s32 m_id = e.components[COMPONENT_MATERIAL];
-    if (materials[m_id].texture == 0) {
+    if (materials[m_id].texture == 0 && materials[m_id].program == 0) {
       INFO("Material has not been set for entity %d", e.id);
       continue;
     }
 
-    s32 p_id = e.components[COMPONENT_PROGRAM];
+    s32 p_id = materials[m_id].program;
+    if (p_id <= 0 || p_id >= MAX_PROGRAMS || !programs[p_id].id)
+      continue;
     s32 p_gl_id = programs[p_id].id;
 
     glUseProgram(p_gl_id);
@@ -195,7 +198,11 @@ s8 ren_draw_frame() {
 
     struct object_T o = objects[o_id];
     s32 t_id = materials[m_id].texture;
-    glBindTexture(GL_TEXTURE_2D, textures[t_id].gl_id);
+    // temporal
+    if (materials[m_id].has_color)
+      ren_program_set_vec3(p_gl_id, "u_color", materials[m_id].color);
+    if (t_id > 0 && t_id < MAX_TEXTURES && textures[t_id].gl_id)
+      glBindTexture(GL_TEXTURE_2D, textures[t_id].gl_id);
     glBindVertexArray(o.VAO);
     glDrawArrays(GL_TRIANGLES, 0, o.n_triangles * 3);
   }
@@ -211,12 +218,13 @@ void ren_set_ui_background(s32 texture_id, struct rect_T bound) {
   ui_viewport_ = bound;
 
   if (ui_object_ == 0) {
-    ui_object_ = ren_primitive_create_hud_plane();
+    ui_object_ = ren_primitive_create_hud_plane(NULL);
   }
 
   if (ui_program_ == 0) {
-    ui_program_ = ren_create_program_from_files(
-        SHADERS_SOURCE_DIR "cef_v.glsl", SHADERS_SOURCE_DIR "cef_f.glsl");
+    ui_program_ =
+        ren_create_program_from_files("cef", SHADERS_SOURCE_DIR "cef_v.glsl",
+                                      SHADERS_SOURCE_DIR "cef_f.glsl");
   }
 };
 
@@ -236,4 +244,18 @@ void ren_update_ui_background(struct rect_T bound, u8 *bitmap) {
 
   ui_viewport_ = bound;
   ren_update_texture(ui_texture_, bitmap, bound.w, bound.h);
+};
+
+void ren_update_ui_background_sub(struct rect_T dst, u8 *bitmap) {
+  if (ui_texture_ == 0)
+    return;
+  GLuint gl_id = textures[ui_texture_].gl_id;
+  if (gl_id == 0)
+    return;
+  glBindTexture(GL_TEXTURE_2D, gl_id);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, dst.w);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, dst.x, dst.y, dst.w, dst.h, GL_BGRA,
+                  GL_UNSIGNED_BYTE, bitmap);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
 };

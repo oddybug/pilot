@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "data/atom.h"
 #include "data/serial.h"
 #include "log.h"
 #include "shader.h"
@@ -117,7 +118,7 @@ static s32 _ren_create_program(s32 vertex, s32 fragment) {
   return id;
 };
 
-s32 ren_create_program(const char *vertex_src,
+s32 ren_create_program(const c8 *name, const char *vertex_src,
                               const char *fragment_src) {
   s32 fragment = _ren_create_fragment_shader(fragment_src);
   if (fragment == -1) {
@@ -152,6 +153,7 @@ s32 ren_create_program(const char *vertex_src,
   programs[id].fs_id = vertex;
   programs[id].fs_id = fragment;
   programs[id].id = p_gl_id;
+  programs[id].name = name && name[0] ? gen_atom(name) : NULL;
 
   return id;
 };
@@ -199,12 +201,12 @@ static char *ren_file_to_str(const char *dir) {
   return src;
 };
 
-s32 ren_create_program_from_files(const char *vertex_src_dir,
+s32 ren_create_program_from_files(const c8 *name, const char *vertex_src_dir,
                                          const char *fragment_src_dir) {
   const char *const v_src = ren_file_to_str(vertex_src_dir);
   const char *const f_src = ren_file_to_str(fragment_src_dir);
 
-  return ren_create_program(v_src, f_src);
+  return ren_create_program(name, v_src, f_src);
 };
 
 s32 ren_delete_program(u32 program) {
@@ -226,6 +228,7 @@ s32 ren_delete_program(u32 program) {
   programs[program].vs_id = 0;
   glDeleteProgram(programs[program].id);
   programs[program].fs_id = 0;
+  programs[program].name = NULL;
 
   return 0;
 };

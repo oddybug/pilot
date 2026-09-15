@@ -19,6 +19,7 @@ struct target_T {
 
 enum iom_target_flag {
   TARGET_CALLBACK_ALWAYS = 1u << 0,
+  TARGET_CALLBACK_NEVER = 1u << 1,
 };
 
 #define MAX_TARGETS 8

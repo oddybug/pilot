@@ -3,6 +3,7 @@
 // can be found in the LICENSE file.
 
 #include "simple_handler.h"
+#include "dmath.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -377,12 +378,25 @@ bool SimpleHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-// TODO: to implement
-void SimpleHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {}
+extern "C" void pilot_popup_show(s32 show);
+extern "C" void pilot_popup_size(s32 x, s32 y, s32 w, s32 h);
 
-// TODO: to implement
+void SimpleHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {
+  popup_show_ = show;
+  if (show) {
+    pilot_popup_show(1);
+  } else {
+    pilot_popup_show(0);
+  }
+}
+
 void SimpleHandler::OnPopupSize(CefRefPtr<CefBrowser> browser,
-                                const CefRect &rect) {}
+                                const CefRect &rect) {
+  popup_rect_ = rect;
+  if (popup_show_) {
+    pilot_popup_size(rect.x, rect.y, rect.width, rect.height);
+  }
+}
 
 void SimpleHandler::SetTextureCallback(TextureCallbackFn clbk) {
   text_callback_ = clbk;
@@ -447,17 +461,19 @@ void SimpleHandler::init_e_map() {
                                gen_map_cmp_key_c8p, ui_msg_pushem_free_clbk_);
 };
 
-// TODO: to implement
 void SimpleHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                             PaintElementType type, const RectList &dirtyRects,
                             const void *buffer, int width, int height) {
-  // temporary fix. Turns out CEF returns more than one dirty rect for things
-  // like input popouts
-  if (type != PET_VIEW) {
+  if (type == PET_VIEW) {
+    struct rect_T r = {0, 0, (s32)width, (s32)height};
+    text_callback_((u8 *)buffer, 0, r);
     return;
   }
-
-  text_callback_((u8 *)buffer, width, height);
+  if (type == PET_POPUP && popup_show_) {
+    struct rect_T r = {popup_rect_.x, popup_rect_.y, (s32)popup_rect_.width,
+                       (s32)popup_rect_.height};
+    text_callback_((u8 *)buffer, 1, r);
+  }
 }
 
 // TODO: to implement

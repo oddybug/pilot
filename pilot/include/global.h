@@ -24,9 +24,11 @@ struct pilot_cfg_T {
 extern struct pilot_cfg_T g_cfg;
 
 extern s32 g_hud_m_id;
-
 extern s32 g_gl_target;
+
 extern s32 g_ui_target;
+
+extern s32 g_popup_target;
 
 void pilot_cfg_init(void);
 

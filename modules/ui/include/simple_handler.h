@@ -73,7 +73,7 @@ public:
 
   bool AreAllBrowsersClosed();
 
-  using TextureCallbackFn = void (*)(u8 *, u32, u32);
+  using TextureCallbackFn = void (*)(u8 *, s32, struct rect_T);
   using CursorCallbackFn = void (*)(s32);
 
   void SetTextureCallback(TextureCallbackFn clbk);
@@ -175,6 +175,8 @@ public:
 private:
   TextureCallbackFn text_callback_ = nullptr;
   CursorCallbackFn cursor_callback_ = nullptr;
+  CefRect popup_rect_;
+  bool popup_show_ = false;
 };
 
 #endif // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

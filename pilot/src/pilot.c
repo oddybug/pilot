@@ -309,6 +309,26 @@ static void pilot_get_entity_clbk(msg_T msg, msg_T response) {
   ui_msg_populate(response, (c8 *)out);
 };
 
+static void pilot_set_object_transform_clbk(msg_T msg, msg_T response) {
+  s32 id;
+  f32 v[6];
+  ui_msg_arg_read_s32(msg, &id);
+  for (int i = 0; i < 6; i++)
+    ui_msg_arg_read_f32(msg, &v[i]);
+  if (id <= 0 || id >= MAX_OBJECTS ||
+      (!objects[id].VAO && !objects[id].n_triangles)) {
+    WARN("set-object-transform: bad object %d", id);
+    return;
+  }
+  objects[id].position[0] = v[0];
+  objects[id].position[1] = v[1];
+  objects[id].position[2] = v[2];
+  objects[id].rotation[0] = v[3];
+  objects[id].rotation[1] = v[4];
+  objects[id].rotation[2] = v[5];
+  (void)response;
+};
+
 static void pilot_set_entity_material_clbk(msg_T msg, msg_T response) {
   s32 e_id, m_id;
   ui_msg_arg_read_s32(msg, &e_id);
@@ -883,6 +903,10 @@ void pilot_set_msg_calls() {
   ui_msg_pull_set_i("set-entity-material", S32, S32);
   ui_msg_pull_set_o("set-entity-material");
 
+  ui_msg_pull_new("set-object-transform", pilot_set_object_transform_clbk);
+  ui_msg_pull_set_i("set-object-transform", S32, F32, F32, F32, F32, F32, F32);
+  ui_msg_pull_set_o("set-object-transform");
+
   enum ARG_TYPE log_o[1] = {STRING};
   struct args log_args_o = (struct args){.args = log_o, .n_args = 1};
   ui_msg_push_new_entry("pilot-log", &log_args_o);
@@ -918,10 +942,11 @@ static void pilot_start_camera() {
   ren_set_camera_planes(0.1f, 100.0f);
   ren_set_camera_projection(PERSPECTIVE);
   ren_set_camera_fov(1.3);
-  ren_camera_set_position(0.0, 0.0, 5.0);
-  ren_camera_set_rotation(0.0, 0.0, 0.0);
-  ren_translate_camera((vec3){0.0f, 0.0f, -3.0f});
+  // ren_translate_camera((vec3){0.0f, 0.0f, -10.0f});
   ren_camera_mode(CAMERA_ORBIT);
+  ren_camera_orbit_o((vec3){0.0, 0.0, 0.0});
+  ren_camera_orbit_r(6.0);
+  ren_camera_orbit((vec3){-0.6, 1.0, 0.0});
 }
 
 void pilot_init_scene() {
@@ -944,19 +969,27 @@ void pilot_init_scene() {
   ren_entity_add_component(e1, COMPONENT_MATERIAL, m_id);
   ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
 
-  s32 p_color =
-      ren_create_program_from_files("color", SHADERS_SOURCE_DIR "vertex.glsl",
-                                    SHADERS_SOURCE_DIR "fragment_color.glsl");
-  s32 m_color = ren_create_material("color-mat");
-  ren_material_set_program(m_color, p_color);
-  vec3 red = {0.9f, 0.2f, 0.2f};
-  ren_material_set_color(m_color, red);
+  s32 p_grid = ren_create_program_from_files(
+      "grid", SHADERS_SOURCE_DIR "vertex_grid.glsl",
+      SHADERS_SOURCE_DIR "fragment_grid.glsl");
+  s32 m_grid = ren_create_material("grid-mat");
+  ren_material_set_program(m_grid, p_grid);
+  vec3 grid_line = {1.0f, 1.0f, 1.0f};
+  ren_bind_program(programs[p_grid].id);
+  ren_program_set_vec3(programs[p_grid].id, "u_line", grid_line);
+  ren_program_set_f32(programs[p_grid].id, "u_cell", 0.5f);
+  ren_program_set_f32(programs[p_grid].id, "u_density", 0.20f);
+  ren_program_set_f32(programs[p_grid].id, "u_major_every", 8.0f);
+  ren_program_set_f32(programs[p_grid].id, "u_major_width", 1.0f);
+  ren_bind_program(0);
+  ren_material_set_transparent(m_grid, 1);
 
-  s32 e2 = ren_create_entity("cube-color");
-  s32 cube2 = ren_primitive_create_cube("cube-color");
-  objects[cube2].position[0] = 1.5f;
-  ren_entity_add_component(e2, COMPONENT_MATERIAL, m_color);
-  ren_entity_add_component(e2, COMPONENT_OBJECT, cube2);
+  s32 e_floor = ren_create_entity("floor");
+  s32 floor = ren_primitive_create_plane("floor");
+  objects[floor].scale[0] = 50.0f;
+  objects[floor].scale[2] = 50.0f;
+  ren_entity_add_component(e_floor, COMPONENT_MATERIAL, m_grid);
+  ren_entity_add_component(e_floor, COMPONENT_OBJECT, floor);
 };
 
 void pilot_create_targets() {

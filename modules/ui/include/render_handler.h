@@ -74,7 +74,8 @@ private:
   void CreateMessageBs(msg_T msg, const c8 *name, struct args *in,
                        CefRefPtr<CefListValue> &args);
 
-  void CopyValueToStream(CefRefPtr<CefValue> &value, msg_T msg, list_T l);
+  void CopyValueToStream(CefRefPtr<CefValue> &value, msg_T msg, list_T l,
+                           enum ARG_TYPE expected);
 
   void PushArgument(CefV8ValueList &arguments, msg_T msg, enum ARG_TYPE type);
 

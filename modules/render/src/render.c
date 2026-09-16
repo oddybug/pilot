@@ -203,8 +203,15 @@ s8 ren_draw_frame() {
       ren_program_set_vec3(p_gl_id, "u_color", materials[m_id].color);
     if (t_id > 0 && t_id < MAX_TEXTURES && textures[t_id].gl_id)
       glBindTexture(GL_TEXTURE_2D, textures[t_id].gl_id);
+    if (materials[m_id].transparent) {
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
     glBindVertexArray(o.VAO);
     glDrawArrays(GL_TRIANGLES, 0, o.n_triangles * 3);
+    if (materials[m_id].transparent) {
+      glDisable(GL_BLEND);
+    }
   }
 
   return 0;

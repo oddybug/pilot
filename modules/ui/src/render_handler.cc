@@ -539,11 +539,11 @@ bool MyRenderProcessHandler::CheckType(enum ARG_TYPE c_type,
     break;
   case VTYPE_INT:
     INFO("INT");
-    return c_type == S32 || c_type == U32;
+    return c_type == S32 || c_type == U32 || c_type == F32;
     break;
   case VTYPE_DOUBLE:
     INFO("DOUBLE");
-    return false;
+    return c_type == F32;
     break;
   case VTYPE_STRING:
     return c_type == STRING ? true : false;
@@ -628,7 +628,7 @@ void MyRenderProcessHandler::CreateMessageBs(msg_T msg, const c8 *name,
   list_T l = gen_list_new();
   for (int i = 0; i < in->n_args; i++) {
     CefRefPtr<CefValue> value = args->GetValue(i);
-    CopyValueToStream(value, msg, l);
+    CopyValueToStream(value, msg, l, in->args[i]);
   }
   ui_msg_populate_r(msg, l);
 
@@ -638,9 +638,27 @@ void MyRenderProcessHandler::CreateMessageBs(msg_T msg, const c8 *name,
   }
 }
 
+// To revise //temp
 void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
-                                               msg_T msg, list_T l) {
+                                               msg_T msg, list_T l,
+                                               enum ARG_TYPE expected) {
   CefValueType type = value->GetType();
+  if (expected == F32) {
+    f32 *v = (f32 *)malloc(sizeof(f32));
+    if (!v)
+      goto err;
+    if (type == VTYPE_DOUBLE)
+      *v = (f32)value->GetDouble();
+    else if (type == VTYPE_INT)
+      *v = (f32)value->GetInt();
+    else {
+      free(v);
+      WARN("expected F32 but got js type %d", (int)type);
+      return;
+    }
+    gen_list_push_back(l, v);
+    return;
+  }
   switch (type) {
   case VTYPE_INVALID:
     break;
@@ -657,8 +675,14 @@ void MyRenderProcessHandler::CopyValueToStream(CefRefPtr<CefValue> &value,
     // INFO("value: %d", v);
     break;
   }
-  case VTYPE_DOUBLE:
+  case VTYPE_DOUBLE: {
+    f32 *v = (f32 *)malloc(sizeof(f32));
+    if (!v)
+      goto err;
+    *v = (f32)value->GetDouble();
+    gen_list_push_back(l, v);
     break;
+  }
   case VTYPE_STRING: {
 
     INFO("gola");
@@ -708,7 +732,14 @@ void MyRenderProcessHandler::PushArgument(CefV8ValueList &arguments, msg_T msg,
     ui_msg_arg_read_s32(msg, &value);
     arguments.push_back(CefV8Value::CreateInt(value));
     break;
-  case STRING:
+  }
+  case F32: {
+    f32 value;
+    ui_msg_arg_read_f32(msg, &value);
+    arguments.push_back(CefV8Value::CreateDouble(value));
+    break;
+  }
+  case STRING: {
     c8 str[ui_msg_str_size(msg) + 1];
     ui_msg_arg_read_str(msg, str);
     INFO("%s", str);

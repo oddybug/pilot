@@ -11,7 +11,7 @@ extern "C" {
 
 #define DICC_SIZE 1024
 
-enum ARG_TYPE { U32 = 0, S32, STRING, ARG_TYPE, ARG_END = -1 };
+enum ARG_TYPE { U32 = 0, S32, F32, STRING, ARG_TYPE, ARG_END = -1 };
 
 enum MSG_ACCESS { MSG_READ = 0, MSG_WRITE };
 
@@ -53,6 +53,8 @@ s32 ui_msg_arg_read_s32(msg_T msg, s32 *val);
 
 s32 ui_msg_arg_read_u32(msg_T msg, u32 *val);
 
+s32 ui_msg_arg_read_f32(msg_T msg, f32 *val);
+
 s32 ui_msg_arg_read_str(msg_T msg, c8 *val);
 
 size_t ui_msg_str_size(msg_T msg);
@@ -64,6 +66,8 @@ void ui_msg_write_s32_r(msg_T msg, s32 val);
 
 void ui_msg_write_u32_r(msg_T msg, u32 val);
 
+void ui_msg_write_f32_r(msg_T msg, f32 val);
+
 void ui_msg_write_string_r(msg_T msg, const c8 *string);
 
 // access == READ
@@ -71,6 +75,8 @@ void ui_msg_write_string_r(msg_T msg, const c8 *string);
 void ui_msg_read_s32_r(msg_T msg, s32 *val);
 
 void ui_msg_read_u32_r(msg_T msg, u32 *val);
+
+void ui_msg_read_f32_r(msg_T msg, f32 *val);
 
 void ui_msg_read_str_r(msg_T msg, c8 *string);
 

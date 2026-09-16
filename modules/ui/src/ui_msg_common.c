@@ -69,6 +69,9 @@ const c8 *ui_args_e2s_(enum ARG_TYPE type) {
   case S32:
     return "S32";
     break;
+  case F32:
+    return "F32";
+    break;
   case U32:
     return "U32";
     break;
@@ -95,6 +98,9 @@ static size_t ui_args_arg_size_(enum ARG_TYPE type, void *value) {
   case S32:
     res = sizeof(s32);
     break;
+  case F32:
+    res = sizeof(f32);
+    break;
   case STRING:
     res = strlen(value) + 1;
     break;
@@ -119,6 +125,10 @@ static size_t ui_args_argsv_get_(struct args *args, va_list list) {
     case S32:
       (void)va_arg(list, s32);
       msg_size += ui_args_arg_size_(S32, NULL);
+      break;
+    case F32:
+      (void)va_arg(list, double);
+      msg_size += ui_args_arg_size_(F32, NULL);
       break;
     case ARG_TYPE:
       (void)va_arg(list, s32);
@@ -156,6 +166,9 @@ static size_t ui_args_argsv_get_r_(struct args *args, list_T list) {
     case S32:
       msg_size += ui_args_arg_size_(S32, NULL);
       break;
+    case F32:
+      msg_size += ui_args_arg_size_(F32, NULL);
+      break;
     case ARG_TYPE:
       msg_size += ui_args_arg_size_(ARG_TYPE, NULL);
       break;
@@ -192,6 +205,11 @@ static void ui_msg_populate_h(msg_T msg, size_t args_s, va_list l) {
     case S32: {
       s32 value = va_arg(l, s32);
       ui_msg_write_s32_r(msg, value);
+      break;
+    }
+    case F32: {
+      f32 value = (f32)va_arg(l, double);
+      ui_msg_write_f32_r(msg, value);
       break;
     }
     case ARG_TYPE: {
@@ -250,6 +268,10 @@ static void ui_msg_populate_hr_(msg_T msg, size_t args_s, list_T l) {
     }
     case S32: {
       ui_msg_write_s32_r(msg, *(s32 *)n->value);
+      break;
+    }
+    case F32: {
+      ui_msg_write_f32_r(msg, *(f32 *)n->value);
       break;
     }
     case ARG_TYPE: {
@@ -412,6 +434,18 @@ s32 ui_msg_arg_read_u32(msg_T msg, u32 *val) {
   return 0;
 };
 
+s32 ui_msg_arg_read_f32(msg_T msg, f32 *val) {
+  assert(msg);
+  assert(msg->msg);
+  if (ui_args_check_(msg, F32))
+    return 1;
+
+  memcpy(val, msg->it, sizeof(f32));
+  msg->it += sizeof(f32);
+  msg->i++;
+  return 0;
+};
+
 s32 ui_msg_arg_read_str(msg_T msg, c8 *val) {
 
   if (ui_args_check_(msg, STRING))
@@ -472,6 +506,11 @@ void ui_msg_write_u32_r(msg_T msg, u32 val) {
   msg->it += sizeof(u32);
 };
 
+void ui_msg_write_f32_r(msg_T msg, f32 val) {
+  memcpy(msg->it, &val, sizeof(f32));
+  msg->it += sizeof(f32);
+};
+
 void ui_msg_write_string_r(msg_T msg, const c8 *string) {
 
   size_t s_l = strlen(string);
@@ -487,6 +526,11 @@ void ui_msg_read_s32_r(msg_T msg, s32 *val) {
 void ui_msg_read_u32_r(msg_T msg, u32 *val) {
   memcpy(val, msg->it, sizeof(u32));
   msg->it += sizeof(u32);
+};
+
+void ui_msg_read_f32_r(msg_T msg, f32 *val) {
+  memcpy(val, msg->it, sizeof(f32));
+  msg->it += sizeof(f32);
 };
 
 // TOOD safely read string !IMPORTANT

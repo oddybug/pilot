@@ -14,6 +14,7 @@ struct material_T {
   // This will change with the parsing feature.
   vec3 color;
   s32 has_color;
+  s32 transparent;
   const c8 *name;
 };
 
@@ -28,6 +29,9 @@ s32 ren_material_set_program(s32 m_id, s32 p_id);
 
 // temp
 void ren_material_set_color(s32 m_id, vec3 color);
+
+// temp
+void ren_material_set_transparent(s32 m_id, s32 transparent);
 
 struct material_T ren_get_material(s32 id);
 

@@ -104,6 +104,7 @@ s32 ren_primitive_create_cube(const c8 *name) {
 
   glm_vec3_zero(objects[id].position);
   glm_vec3_zero(objects[id].rotation);
+  glm_vec3_one(objects[id].scale);
   objects[id].name = name && name[0] ? gen_atom(name) : NULL;
 
   glGenVertexArrays(1, &objects[id].VAO);
@@ -145,6 +146,7 @@ s32 ren_primitive_create_hud_plane(const c8 *name) {
 
   glm_vec3_zero(objects[id].position);
   glm_vec3_zero(objects[id].rotation);
+  glm_vec3_one(objects[id].scale);
   objects[id].name = name && name[0] ? gen_atom(name) : NULL;
 
   glGenVertexArrays(1, &objects[id].VAO);
@@ -184,6 +186,7 @@ s32 ren_primitive_create_plane(const c8 *name) {
   objects[id].n_triangles = 2;
   glm_vec3_zero(objects[id].position);
   glm_vec3_zero(objects[id].rotation);
+  glm_vec3_one(objects[id].scale);
   objects[id].name = name && name[0] ? gen_atom(name) : NULL;
   glGenVertexArrays(1, &objects[id].VAO);
   glBindVertexArray(objects[id].VAO);
@@ -213,6 +216,7 @@ void ren_get_model_mat(s32 id, mat4 model) {
   glm_rotate(model, objects[id].rotation[0], (vec3){1.0, 0.0, 0.0});
   glm_rotate(model, objects[id].rotation[1], (vec3){0.0, 1.0, 0.0});
   glm_rotate(model, objects[id].rotation[2], (vec3){0.0, 0.0, 1.0});
+  glm_scale(model, objects[id].scale);
 }
 
 // model[0] = objects[i]; };

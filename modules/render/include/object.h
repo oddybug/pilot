@@ -18,6 +18,7 @@ struct object_T {
 
   vec3 position;
   vec3 rotation;
+  vec3 scale;
   const c8 *name;
 };
 

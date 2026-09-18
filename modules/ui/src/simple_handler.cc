@@ -131,6 +131,9 @@ bool SimpleHandler::OnProcessMessageReceived(
     CefRefPtr<CefBinaryValue> bs_res =
         CefBinaryValue::Create(ui_msg_bs(response), ui_msg_size(response));
     cef_response_args->SetBinary(0, bs_res);
+    CefRefPtr<CefBinaryValue> req_bin = args->GetBinary(1);
+    if (req_bin)
+      cef_response_args->SetBinary(1, req_bin);
     frame->SendProcessMessage(PID_RENDERER, cef_response);
 
     free(msg);

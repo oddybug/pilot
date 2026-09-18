@@ -69,13 +69,13 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
       return false;
     }
 
-    s32 browser_id = context->GetBrowser()->GetIdentifier();
-    MyRenderProcessHandler::CallbackKey key =
-        std::make_pair(message_name, browser_id);
+    u32 req = render_handler_->next_req_id_++;
+    if (req == 0)
+      req = render_handler_->next_req_id_++;
 
     if (has_cb) {
       context->Enter();
-      render_handler_->pull_callback_map_[key] =
+      render_handler_->pull_callback_map_[req] =
           std::make_pair(context, arguments[1]);
       context->Exit();
     }
@@ -83,8 +83,12 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     CefRefPtr<CefProcessMessage> msg = render_handler_->CreateMessage(
         message_name.c_str(), e, ConvertV8ListToCefList(arguments));
     if (!msg) {
+      if (has_cb)
+        render_handler_->pull_callback_map_.erase(req);
       return false;
     }
+    msg->GetArgumentList()->SetBinary(
+        1, CefBinaryValue::Create(&req, sizeof(req)));
     context->GetFrame()->SendProcessMessage(PID_BROWSER, msg);
     return true;
 
@@ -112,9 +116,9 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
       return false;
     }
 
-    s32 browser_id = context->GetBrowser()->GetIdentifier();
-    MyRenderProcessHandler::CallbackKey key =
-        std::make_pair(message_name, browser_id);
+    std::string frame_id = context->GetFrame()->GetIdentifier().ToString();
+    MyRenderProcessHandler::PushCallbackKey key =
+        std::make_pair(message_name, frame_id);
 
     context->Enter();
     render_handler_->push_callback_map_[key] =
@@ -303,12 +307,18 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     c8 en[strlen(sc) + 1];
     strcpy(en, sc);
 
-    std::string en_s = en;
-    CallbackKey key = std::make_pair(en_s, browser->GetIdentifier());
-    auto it = pull_callback_map_.find(key);
+    CefRefPtr<CefBinaryValue> req_bin = args->GetBinary(1);
+    u32 req = 0;
+    if (req_bin && req_bin->GetSize() == sizeof(req)) {
+      req_bin->GetData(&req, sizeof(req), 0);
+    } else {
+      WARN("entry_response missing req id for %s", en);
+      return false;
+    }
+    auto it = pull_callback_map_.find(req);
 
     if (it == pull_callback_map_.end()) {
-      WARN("No associated entry with name: %s", en);
+      WARN("No associated entry for req %u name: %s", req, en);
       return false;
     }
     CefRefPtr<CefV8Context> context = it->second.first;
@@ -370,7 +380,9 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     s32 valid;
 
     std::string m_s = msg_name;
-    CallbackKey key = std::make_pair(msg_name, browser->GetIdentifier());
+
+    std::string frame_id_push_req = frame->GetIdentifier().ToString();
+    PushCallbackKey key = std::make_pair(m_s, frame_id_push_req);
 
     auto it = push_callback_map_.find(key);
     if (it == push_callback_map_.end()) {
@@ -423,7 +435,8 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     strcpy(en, sc);
 
     std::string en_s = en;
-    CallbackKey key = std::make_pair(en_s, browser->GetIdentifier());
+    std::string frame_id_push = frame->GetIdentifier().ToString();
+    PushCallbackKey key = std::make_pair(en_s, frame_id_push);
     auto it = push_callback_map_.find(key);
 
     if (it == push_callback_map_.end()) {

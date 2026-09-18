@@ -36,10 +36,12 @@ class MyRenderProcessHandler : public CefRenderProcessHandler {
 public:
   static MyRenderProcessHandler *GetInstance();
 
-  typedef std::pair<std::string, int> CallbackKey;
+  typedef u32 PullCallbackKey;
+  typedef std::pair<std::string, std::string> PushCallbackKey;
   typedef std::pair<CefRefPtr<CefV8Context>, CefRefPtr<CefV8Value>>
       CallbackValue;
-  typedef std::map<CallbackKey, CallbackValue> CallbackMap;
+  typedef std::map<PullCallbackKey, CallbackValue> PullCallbackMap;
+  typedef std::map<PushCallbackKey, CallbackValue> PushCallbackMap;
 
   MyRenderProcessHandler();
   ~MyRenderProcessHandler();
@@ -79,8 +81,9 @@ private:
 
   void PushArgument(CefV8ValueList &arguments, msg_T msg, enum ARG_TYPE type);
 
-  CallbackMap pull_callback_map_;
-  CallbackMap push_callback_map_;
+  PullCallbackMap pull_callback_map_;
+  PushCallbackMap push_callback_map_;
+  u32 next_req_id_ = 1;
 
   IMPLEMENT_REFCOUNTING(MyRenderProcessHandler);
 };

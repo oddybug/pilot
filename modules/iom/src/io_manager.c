@@ -55,7 +55,6 @@ s8 iom_init_sdl() {
 
   g_running = 1;
 
-  SDL_SetHint(SDL_HINT_VIDEO_FORCE_EGL, "1");
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, OPENGL_MAJOR);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, OPENGL_MINOR);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -138,12 +137,11 @@ static s8 iom_init_glad_gles(void) {
   egl_display = (EGLDisplay)SDL_EGL_GetCurrentDisplay();
 
   if (egl_display == NULL) {
-    fprintf(stderr, "%s", SDL_GetError());
+    return 0;
   }
 
   if (!gladLoadEGL(egl_display, (GLADloadfunc)SDL_GL_GetProcAddress)) {
-    fprintf(stderr, "Failed to load GLAD EGL symbols\n");
-    return -1;
+    return 0;
   };
   return 0;
 };
@@ -155,29 +153,24 @@ s8 iom_init() {
   s8 err = iom_init_sdl();
 
   if (err != 0) {
-    fprintf(stderr, "SDL exited with error code %d\n", err);
+    ERROR(stderr, "SDL exited with error code %d\n", err);
   }
 
   err = iom_create_default_window();
 
   if (err != 0) {
-    fprintf(stderr,
-            "SDL exited with error code %d\n when creating default window",
-            err);
+    ERROR(stderr,
+          "SDL exited with error code %d\n when creating default window", err);
   }
 
   err = iom_init_glad_gl();
 
   if (err != 0) {
-    fprintf(stderr, "Glad exited with error code %d\n while loading GL", err);
+    ERROR("Glad exited with error code %d\n while loading GL", err);
+    return err;
   }
 
-  err = iom_init_glad_gles();
-
-  if (err != 0) {
-    fprintf(stderr, "Glad exited with error code %d\n while loading GL ES",
-            err);
-  }
+  iom_init_glad_gles();
 
   return 0;
 }

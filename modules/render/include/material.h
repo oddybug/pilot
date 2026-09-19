@@ -11,10 +11,10 @@ extern "C" {
 struct material_T {
   s32 program;
   s32 texture;
-  // This will change with the parsing feature.
   vec3 color;
   s32 has_color;
   s32 transparent;
+  f32 line_width;
   const c8 *name;
 };
 
@@ -32,6 +32,9 @@ void ren_material_set_color(s32 m_id, vec3 color);
 
 // temp
 void ren_material_set_transparent(s32 m_id, s32 transparent);
+
+// temp
+void ren_material_set_line_width(s32 m_id, f32 width);
 
 struct material_T ren_get_material(s32 id);
 

@@ -11,10 +11,15 @@ extern "C" {
 struct object_T {
   u32 VBO[3];
   u32 VAO;
+  u32 EBO;
+  u32 indexed;
 
   u32 id;
 
   u32 n_triangles;
+  u32 n_vertices;
+  u32 n_indices;
+  u32 primitive;
 
   vec3 position;
   vec3 rotation;
@@ -30,6 +35,8 @@ s32 ren_primitive_create_cube(const c8 *name);
 s32 ren_primitive_create_hud_plane(const c8 *name);
 
 s32 ren_primitive_create_plane(const c8 *name);
+
+s32 ren_primitive_create_line(const c8 *name, vec3 a, vec3 b);
 
 s32 ren_delete_object(s32 id);
 

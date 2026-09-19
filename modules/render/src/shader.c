@@ -1,8 +1,8 @@
 #include <errno.h>
 #include <glad/gl.h>
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "data/atom.h"
 #include "data/serial.h"
@@ -68,14 +68,32 @@ static s32 _ren_create_vertex_shader(const char *src) {
   return vertex;
 };
 
+static s32 _ren_create_geometry_shader(const char *src) {
+  s32 geom = glCreateShader(GL_GEOMETRY_SHADER);
+  s32 success;
+  GLchar info[512];
+  glShaderSource(geom, 1, &src, NULL);
+  glCompileShader(geom);
+  glGetShaderiv(geom, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(geom, 512, NULL, info);
+    fprintf(stderr, "Geometry shader compilation failed: %s\n", info);
+    return -1;
+  }
+  return geom;
+};
+
 s32 ren_create_shader(enum SHADER_TYPE type, const char *src) {
-  s32 id;
+  s32 id = -1;
   switch (type) {
   case RENDER_VERTEX_SHADER:
     id = _ren_create_vertex_shader(src);
     break;
   case RENDER_FRAGEMENT_SHADER:
     id = _ren_create_fragment_shader(src);
+    break;
+  case RENDER_GEOMETRY_SHADER:
+    id = _ren_create_geometry_shader(src);
     break;
   default:
     break;
@@ -93,6 +111,8 @@ s32 ren_create_shader(enum SHADER_TYPE type, const char *src) {
  * @return returns OpenGL programs ID
  */
 static s32 _ren_create_program(s32 vertex, s32 fragment);
+
+static s32 _ren_create_program_with_gs(s32 vertex, s32 geom, s32 fragment);
 
 static s32 _ren_create_program(s32 vertex, s32 fragment) {
 
@@ -118,8 +138,25 @@ static s32 _ren_create_program(s32 vertex, s32 fragment) {
   return id;
 };
 
+static s32 _ren_create_program_with_gs(s32 vertex, s32 geom, s32 fragment) {
+  s32 success;
+  GLchar info[512];
+  s32 id = glCreateProgram();
+  glAttachShader(id, vertex);
+  glAttachShader(id, geom);
+  glAttachShader(id, fragment);
+  glLinkProgram(id);
+  glGetProgramiv(id, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(id, 512, NULL, info);
+    fprintf(stderr, "Shader linking failed: %s\n", info);
+    return -1;
+  }
+  return id;
+};
+
 s32 ren_create_program(const c8 *name, const char *vertex_src,
-                              const char *fragment_src) {
+                       const char *fragment_src) {
   s32 fragment = _ren_create_fragment_shader(fragment_src);
   if (fragment == -1) {
     return fragment;
@@ -128,6 +165,7 @@ s32 ren_create_program(const c8 *name, const char *vertex_src,
   s32 vertex = _ren_create_vertex_shader(vertex_src);
 
   if (vertex == -1) {
+    glDeleteShader(fragment);
     return vertex;
   }
 
@@ -140,8 +178,13 @@ s32 ren_create_program(const c8 *name, const char *vertex_src,
   assert(serial != NULL);
 
   s32 id;
-  if (gen_serial_stamp(serial, &id) != 0)
+  if (gen_serial_stamp(serial, &id) != 0) {
+    glDeleteShader(vertex);
+    glDeleteShader(fragment);
+    if (p_gl_id != -1)
+      glDeleteProgram(p_gl_id);
     return -1;
+  }
 
   glDeleteShader(vertex);
   glDeleteShader(fragment);
@@ -150,11 +193,57 @@ s32 ren_create_program(const c8 *name, const char *vertex_src,
     return p_gl_id;
   }
 
-  programs[id].fs_id = vertex;
+  programs[id].vs_id = vertex;
+  programs[id].gs_id = 0;
   programs[id].fs_id = fragment;
   programs[id].id = p_gl_id;
   programs[id].name = name && name[0] ? gen_atom(name) : NULL;
 
+  return id;
+};
+
+s32 ren_create_program_with_geometry(const c8 *name, const char *vertex_src,
+                                     const char *geometry_src,
+                                     const char *fragment_src) {
+  s32 vertex = _ren_create_vertex_shader(vertex_src);
+  if (vertex == -1)
+    return -1;
+  s32 geom = _ren_create_geometry_shader(geometry_src);
+  if (geom == -1) {
+    glDeleteShader(vertex);
+    return -1;
+  }
+  s32 fragment = _ren_create_fragment_shader(fragment_src);
+  if (fragment == -1) {
+    glDeleteShader(vertex);
+    glDeleteShader(geom);
+    return -1;
+  }
+  s32 p_gl_id = _ren_create_program_with_gs(vertex, geom, fragment);
+  if (serial == NULL) {
+    serial = gen_serial_create_from(1);
+  }
+  assert(serial != NULL);
+  s32 id;
+  if (gen_serial_stamp(serial, &id) != 0) {
+    glDeleteShader(vertex);
+    glDeleteShader(geom);
+    glDeleteShader(fragment);
+    if (p_gl_id != -1)
+      glDeleteProgram(p_gl_id);
+    return -1;
+  }
+  glDeleteShader(vertex);
+  glDeleteShader(geom);
+  glDeleteShader(fragment);
+  if (p_gl_id == -1) {
+    return -1;
+  }
+  programs[id].vs_id = vertex;
+  programs[id].gs_id = geom;
+  programs[id].fs_id = fragment;
+  programs[id].id = p_gl_id;
+  programs[id].name = name && name[0] ? gen_atom(name) : NULL;
   return id;
 };
 
@@ -202,34 +291,62 @@ static char *ren_file_to_str(const char *dir) {
 };
 
 s32 ren_create_program_from_files(const c8 *name, const char *vertex_src_dir,
-                                         const char *fragment_src_dir) {
+                                  const char *fragment_src_dir) {
   const char *const v_src = ren_file_to_str(vertex_src_dir);
   const char *const f_src = ren_file_to_str(fragment_src_dir);
+  if (!v_src || !f_src) {
+    if (v_src)
+      free((void *)v_src);
+    if (f_src)
+      free((void *)f_src);
+    return -1;
+  }
+  s32 id = ren_create_program(name, v_src, f_src);
+  free((void *)v_src);
+  free((void *)f_src);
+  return id;
+};
 
-  return ren_create_program(name, v_src, f_src);
+s32 ren_create_program_from_files_with_geometry(const c8 *name,
+                                                const char *vertex_src_dir,
+                                                const char *geometry_src_dir,
+                                                const char *fragment_src_dir) {
+  const char *const v_src = ren_file_to_str(vertex_src_dir);
+  const char *const g_src = ren_file_to_str(geometry_src_dir);
+  const char *const f_src = ren_file_to_str(fragment_src_dir);
+  if (!v_src || !g_src || !f_src) {
+    if (v_src)
+      free((void *)v_src);
+    if (g_src)
+      free((void *)g_src);
+    if (f_src)
+      free((void *)f_src);
+    return -1;
+  }
+  s32 id = ren_create_program_with_geometry(name, v_src, g_src, f_src);
+  free((void *)v_src);
+  free((void *)g_src);
+  free((void *)f_src);
+  return id;
 };
 
 s32 ren_delete_program(u32 program) {
-  assert(programs[program].id != 0);
-  assert(programs[program].fs_id != 0);
-  assert(programs[program].vs_id != 0);
-
-  if (programs[program].vs_id == 0 || programs[program].fs_id == 0 ||
-      programs[program].id == 0) {
-    ERROR("Program with id %d have wrong linkage to one or more of its "
-          "shaders/programs",
-          program);
+  if (programs[program].id == 0) {
+    ERROR("Program with id %d not initialized", program);
     return 1;
   }
-
-  glDeleteShader(programs[program].fs_id);
-  programs[program].id = 0;
-  glDeleteShader(programs[program].vs_id);
-  programs[program].vs_id = 0;
+  if (programs[program].gs_id)
+    glDeleteShader(programs[program].gs_id);
+  if (programs[program].fs_id)
+    glDeleteShader(programs[program].fs_id);
+  if (programs[program].vs_id)
+    glDeleteShader(programs[program].vs_id);
   glDeleteProgram(programs[program].id);
+  programs[program].id = 0;
+  programs[program].vs_id = 0;
+  programs[program].gs_id = 0;
   programs[program].fs_id = 0;
   programs[program].name = NULL;
-
   return 0;
 };
 

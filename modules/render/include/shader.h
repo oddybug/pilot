@@ -9,13 +9,18 @@ extern "C" {
 
 #include <types.h>
 
-enum SHADER_TYPE { RENDER_VERTEX_SHADER = 0, RENDER_FRAGEMENT_SHADER };
+enum SHADER_TYPE {
+  RENDER_VERTEX_SHADER = 0,
+  RENDER_FRAGEMENT_SHADER,
+  RENDER_GEOMETRY_SHADER
+};
 
 #define MAX_PROGRAMS 1024
 
 struct program_T {
   u32 id;
   u32 vs_id;
+  u32 gs_id;
   u32 fs_id;
   const c8 *name;
 };
@@ -42,7 +47,16 @@ s32 ren_create_shader(enum SHADER_TYPE type, const char *src);
  * @return programs ID on succes and -1 on failure
  */
 s32 ren_create_program(const c8 *name, const char *vertex_src,
-                              const char *fragment_src);
+                       const char *fragment_src);
+
+s32 ren_create_program_with_geometry(const c8 *name, const char *vertex_src,
+                                     const char *geometry_src,
+                                     const char *fragment_src);
+
+s32 ren_create_program_from_files_with_geometry(const c8 *name,
+                                                const char *vertex_src_dir,
+                                                const char *geometry_src_dir,
+                                                const char *fragment_src_dir);
 
 /**
  * @brief creates shader program using fragments 'fragment_src_dir' and vertexs
@@ -53,7 +67,7 @@ s32 ren_create_program(const c8 *name, const char *vertex_src,
  * @return programs ID on succes and -1 on failure
  */
 s32 ren_create_program_from_files(const c8 *name, const char *vertex_src_dir,
-                                         const char *fragment_src_dir);
+                                  const char *fragment_src_dir);
 
 /**
  * @brief free program and its shaders linked to it from gpu

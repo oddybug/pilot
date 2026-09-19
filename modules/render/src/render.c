@@ -1,4 +1,3 @@
-#include <GLES2/gl2.h>
 #include <glad/gl.h>
 
 #include <math.h>
@@ -196,11 +195,25 @@ s8 ren_draw_frame() {
     ren_get_model_mat(o_id, model);
     ren_program_set_mat4(p_gl_id, "model", model);
 
+    // i need parser and material utils asap
     struct object_T o = objects[o_id];
     s32 t_id = materials[m_id].texture;
-    // temporal
     if (materials[m_id].has_color)
       ren_program_set_vec3(p_gl_id, "u_color", materials[m_id].color);
+    else {
+      vec3 def = {1.0f, 1.0f, 1.0f};
+      ren_program_set_vec3(p_gl_id, "u_color", def);
+    }
+    if (materials[m_id].line_width > 0.0f)
+      ren_program_set_f32(p_gl_id, "u_thickness", materials[m_id].line_width);
+    else
+      ren_program_set_f32(p_gl_id, "u_thickness", 1.0f);
+    {
+      vec2 vp = {(f32)ren_viewport_.w, (f32)ren_viewport_.h};
+      ren_program_set_vec2(p_gl_id, "u_viewport", vp);
+    }
+    ren_program_set_f32(p_gl_id, "u_alpha",
+                        materials[m_id].transparent ? 0.6f : 1.0f);
     if (t_id > 0 && t_id < MAX_TEXTURES && textures[t_id].gl_id)
       glBindTexture(GL_TEXTURE_2D, textures[t_id].gl_id);
     if (materials[m_id].transparent) {
@@ -208,7 +221,14 @@ s8 ren_draw_frame() {
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     glBindVertexArray(o.VAO);
-    glDrawArrays(GL_TRIANGLES, 0, o.n_triangles * 3);
+    if (o.indexed && o.EBO) {
+      GLenum mode = o.primitive ? o.primitive : GL_TRIANGLES;
+      glDrawElements(mode, o.n_indices, GL_UNSIGNED_INT, 0);
+    } else if (o.primitive && o.primitive != GL_TRIANGLES) {
+      glDrawArrays(o.primitive, 0, o.n_vertices);
+    } else {
+      glDrawArrays(GL_TRIANGLES, 0, o.n_triangles * 3);
+    }
     if (materials[m_id].transparent) {
       glDisable(GL_BLEND);
     }

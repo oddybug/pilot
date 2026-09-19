@@ -28,6 +28,7 @@ s32 ren_create_material(const c8 *name) {
   materials[id].texture = 0;
   materials[id].has_color = 0;
   materials[id].transparent = 0;
+  materials[id].line_width = 0.0f;
   glm_vec3_zero(materials[id].color);
   return id;
 };
@@ -51,6 +52,10 @@ void ren_material_set_transparent(s32 m_id, s32 transparent) {
   materials[m_id].transparent = transparent;
 };
 
+void ren_material_set_line_width(s32 m_id, f32 width) {
+  materials[m_id].line_width = width;
+};
+
 struct material_T ren_get_material(s32 id) { return materials[id]; };
 
 s32 ren_delete_material(s32 id) {
@@ -61,6 +66,7 @@ s32 ren_delete_material(s32 id) {
   materials[id].program = 0;
   materials[id].has_color = 0;
   materials[id].transparent = 0;
+  materials[id].line_width = 0.0f;
   glm_vec3_zero(materials[id].color);
   materials[id].name = NULL;
   return 0;

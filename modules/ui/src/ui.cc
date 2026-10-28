@@ -71,7 +71,7 @@ s32 ui_init(int argc, char *argv[]) {
 // TODO: check if cef is started
 void ui_message_loop() { CefDoMessageLoopWork(); };
 
-void ui_send_mouse_keydown(c16 key) {
+void ui_send_keydown(c16 key) {
 
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   CefRefPtr<CefBrowser> browser = handler->GetBrowser();
@@ -93,7 +93,7 @@ void ui_send_mouse_keydown(c16 key) {
   browser->GetHost()->SendKeyEvent(k_e);
 }
 
-void ui_send_mouse_keyup(c16 key) {
+void ui_send_keyup(c16 key) {
   CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
   CefRefPtr<CefBrowser> browser = handler->GetBrowser();
 
@@ -176,6 +176,29 @@ void ui_close_browsers() {
 void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, s32 isSubImage,
                                              struct rect_T rect)) {
   SimpleHandler::GetInstance()->SetTextureCallback(clbk);
+};
+
+s32 ui_change_url(c8 *str) {
+
+  if (!str)
+    return 1;
+
+  CefRefPtr<SimpleHandler> handler = SimpleHandler::GetInstance();
+  if (!handler.get())
+    return 1;
+
+  CefRefPtr<CefBrowser> browser = handler->GetBrowser();
+  if (!browser.get())
+    return 1;
+
+  CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+  if (!frame.get())
+    return 1;
+
+  std::string url = str;
+  frame->LoadURL(url);
+
+  return 0;
 };
 
 void ui_set_cursor_callback(void (*clbk)(s32 cursor_type)) {

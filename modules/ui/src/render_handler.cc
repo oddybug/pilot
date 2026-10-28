@@ -110,12 +110,6 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
 
     std::string message_name = arguments[0]->GetStringValue().ToString();
 
-    if (gen_map_find(render_handler_->msg_push_m_,
-                     (void *)message_name.c_str())) {
-      WARN("Redefinition of push message: %s", message_name.c_str());
-      return false;
-    }
-
     std::string frame_id = context->GetFrame()->GetIdentifier().ToString();
     MyRenderProcessHandler::PushCallbackKey key =
         std::make_pair(message_name, frame_id);
@@ -124,6 +118,11 @@ bool MyV8Handler::Execute(const CefString &name, CefRefPtr<CefV8Value> object,
     render_handler_->push_callback_map_[key] =
         std::make_pair(context, arguments[1]);
     context->Exit();
+
+    if (gen_map_find(render_handler_->msg_push_m_,
+                     (void *)message_name.c_str())) {
+      return true;
+    }
 
     CefRefPtr<CefV8Value> func = arguments[1];
     u32 f_args = 0;
@@ -245,6 +244,10 @@ void MyRenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   app->SetValue("SetPushClbk", push_func, V8_PROPERTY_ATTRIBUTE_NONE);
 
   context->Exit();
+
+  if (frame.get() && frame->IsValid() && frame->IsMain()) {
+    reset_document_state_();
+  }
 
   CefRefPtr<CefProcessMessage> ipc_dicc_req =
       CefProcessMessage::Create("ipc_dicc_req");
@@ -420,6 +423,14 @@ bool MyRenderProcessHandler::OnProcessMessageReceived(
     }
 
     pmsge->out = a;
+
+    if (gen_map_find(msg_push_m_, msg_name)) {
+      free(at);
+      free(pmsge);
+      free(msg_name);
+      return true;
+    }
+
     gen_map_insert(msg_push_m_, msg_name, pmsge);
 
     return true;
@@ -495,8 +506,16 @@ void MyRenderProcessHandler::OnContextReleased(
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
     CefRefPtr<CefV8Context> context) {
   for (auto it = pull_callback_map_.begin(); it != pull_callback_map_.end();) {
-    if (it->second.first->IsSame(context)) {
+    if (it->second.first.get() && it->second.first->IsSame(context)) {
       it = pull_callback_map_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  for (auto it = push_callback_map_.begin(); it != push_callback_map_.end();) {
+    if (it->second.first.get() && it->second.first->IsSame(context)) {
+      it = push_callback_map_.erase(it);
     } else {
       ++it;
     }
@@ -529,6 +548,23 @@ void MyRenderProcessHandler::init_msg_push_m() {
   msg_push_m_ =
       gen_map_create(DICC_SIZE, gen_map_hash_fn_c8p, gen_map_cmp_key_c8p,
                      pilot_push_entry_free_item_fn_);
+};
+
+void MyRenderProcessHandler::reset_document_state_() {
+  if (msg_pull_m_) {
+    gen_map_free(msg_pull_m_);
+    msg_pull_m_ = nullptr;
+  }
+  init_msg_pull_m_();
+
+  if (msg_push_m_) {
+    gen_map_free(msg_push_m_);
+    msg_push_m_ = nullptr;
+  }
+  init_msg_push_m();
+
+  pull_callback_map_.clear();
+  push_callback_map_.clear();
 };
 
 // TODO: A LOT OF MORE CHECKING IS NEEDED

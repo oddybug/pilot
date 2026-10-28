@@ -18,6 +18,10 @@ void ren_update_ui_background(struct rect_T bound, u8 *bitmap);
 
 void ren_update_ui_background_sub(struct rect_T dst, u8 *bitmap);
 
+void ren_ui_popup_paint(u8 *bitmap, struct rect_T dst);
+
+void ren_ui_popup_hide(void);
+
 void ren_set_gl_enabled(s32 enabled);
 
 void ren_skybox_set(u32 top_hex, u32 bottom_hex, s32 stiffness);

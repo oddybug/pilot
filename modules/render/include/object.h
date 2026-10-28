@@ -38,6 +38,8 @@ s32 ren_primitive_create_plane(const c8 *name);
 
 s32 ren_primitive_create_line(const c8 *name, vec3 a, vec3 b);
 
+s32 ren_primitive_create_frustum(const c8 *name, f32 near, f32 far, f32 fov);
+
 s32 ren_delete_object(s32 id);
 
 // TODO: maybe this object is not active. Needs support runtime checked error.

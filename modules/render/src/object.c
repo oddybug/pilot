@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "cglm/affine.h"
+#include "cglm/cam.h"
 #include "cglm/mat4.h"
 #include "cglm/vec3.h"
 
@@ -245,6 +246,60 @@ s32 ren_primitive_create_line(const c8 *name, vec3 a, vec3 b) {
   objects[id].VBO[2] = 0;
   f32 verts[6] = {a[0], a[1], a[2], b[0], b[1], b[2]};
   u32 idx[2] = {0, 1};
+  glGenVertexArrays(1, &objects[id].VAO);
+  glBindVertexArray(objects[id].VAO);
+  glGenBuffers(1, &objects[id].VBO[0]);
+  glBindBuffer(GL_ARRAY_BUFFER, objects[id].VBO[0]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void *)0);
+  glEnableVertexAttribArray(0);
+  glGenBuffers(1, &objects[id].EBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, objects[id].EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idx), idx, GL_STATIC_DRAW);
+  objects[id].indexed = 1;
+  glBindVertexArray(0);
+  return id;
+}
+
+s32 ren_primitive_create_frustum(const c8 *name, f32 near, f32 far, f32 fov) {
+  if (serial == NULL) {
+    serial = gen_serial_create_from(1);
+  }
+  assert(serial != NULL);
+  s32 id;
+  if (gen_serial_stamp(serial, &id) != 0)
+    return -1;
+
+  mat4 proj;
+  glm_perspective(fov, 1.0f, near, far, proj);
+  vec4 size;
+  glm_persp_sizes(proj, fov, size);
+
+  f32 nw = size[0] * 0.5f;
+  f32 nh = size[1] * 0.5f;
+  f32 fw = size[2] * 0.5f;
+  f32 fh = size[3] * 0.5f;
+  f32 d = far - near;
+
+  f32 verts[24] = {-nw, -nh, 0.0f, nw, -nh, 0.0f, nw, nh, 0.0f, -nw, nh, 0.0f,
+                   -fw, -fh, -d,   fw, -fh, -d,   fw, fh, -d,   -fw, fh, -d};
+  u32 idx[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4,
+                 0, 4, 1, 5, 2, 6, 3, 7};
+
+  objects[id].n_triangles = 0;
+  objects[id].n_vertices = 8;
+  objects[id].n_indices = 24;
+  objects[id].primitive = GL_LINES;
+  objects[id].EBO = 0;
+  objects[id].indexed = 0;
+  glm_vec3_zero(objects[id].position);
+  glm_vec3_zero(objects[id].rotation);
+  glm_vec3_one(objects[id].scale);
+  objects[id].name = name && name[0] ? gen_atom(name) : NULL;
+  objects[id].VBO[0] = 0;
+  objects[id].VBO[1] = 0;
+  objects[id].VBO[2] = 0;
+
   glGenVertexArrays(1, &objects[id].VAO);
   glBindVertexArray(objects[id].VAO);
   glGenBuffers(1, &objects[id].VBO[0]);

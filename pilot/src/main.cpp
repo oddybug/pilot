@@ -18,11 +18,13 @@ int main(int argc, char *argv[]) {
   if (ui_init(argc, argv) != 0) {
     return -1;
   }
+
+  pilot_cfg_init();
+
   pilot_ui_log(PILOT_UI_INFO, "UI initialized.");
 
   pilot_set_msg_calls();
 
-  pilot_cfg_init();
   pilot_ui_log(PILOT_UI_INFO, "Initializing IOM...");
   ui_set_ui_texture_callback(&pilot_ui_texture_clbk);
   ui_set_cursor_callback(&pilot_ui_cursor_clbk);

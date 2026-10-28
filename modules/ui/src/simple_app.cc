@@ -129,6 +129,7 @@ void SimpleApp::OnContextInitialized() {
   url = command_line->GetSwitchValue("url");
   if (url.empty()) {
     url =
+        // "https://docs.google.com/presentation/d/13orvhP-3prdICEwV7MfzzoCi28UhduqXnGfZe1cZRj4/edit?usp=sharing";
         "file:///" WEBSITE_SOURCE_DIR "index.html"; //"https:://www.google.com";
     INFO("url = (%s)", url.c_str());
   }
@@ -168,8 +169,9 @@ void SimpleApp::OnBeforeCommandLineProcessing(
     command_line->AppendSwitchWithValue("use-angle", "gl-egl");
     command_line->AppendSwitchWithValue("remote-debugging-port", "9222");
     command_line->AppendSwitchWithValue("remote-allow-origins", "*");
-    
   }
 };
 
-void SimpleApp::SendIpcDicc(CefRefPtr<CefBrowser> browser) { INFO("SQUEREEEE"); };
+void SimpleApp::SendIpcDicc(CefRefPtr<CefBrowser> browser) {
+  INFO("SQUEREEEE");
+};

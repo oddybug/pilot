@@ -67,6 +67,8 @@ private:
   map_T msg_push_m_;
   void init_msg_push_m();
 
+  void reset_document_state_();
+
   bool CheckType(enum ARG_TYPE c_type, CefValueType js_type);
 
   CefRefPtr<CefProcessMessage> CreateMessage(const c8 *name,

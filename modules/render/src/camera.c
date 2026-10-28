@@ -14,7 +14,7 @@
 
 struct camera_T main_camera;
 
-void res_init_camera() {
+void ren_init_camera() {
   glm_vec3_zero(main_camera.position);
   glm_vec3_zero(main_camera.front);
   glm_vec3_zero(main_camera.euler_angles);

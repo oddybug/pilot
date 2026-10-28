@@ -65,6 +65,9 @@ public:
   void CloseAllBrowsers();
 
   // CefLoadHandler methods:
+  void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                   TransitionType transition_type) override;
+
   void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                    ErrorCode errorCode, const CefString &errorText,
                    const CefString &failedUrl) override;

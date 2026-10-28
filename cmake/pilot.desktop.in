@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=pilot
+Comment=Pilot CEF-based frontend
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/pilot
+Icon=pilot
+Type=Application
+Categories=Graphics;
+StartupNotify=false

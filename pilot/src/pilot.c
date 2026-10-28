@@ -1,5 +1,6 @@
 #include "pilot.h"
 
+#include "SDL3/SDL_video.h"
 #include "dmath.h"
 #include "global.h"
 #include "io_manager.h"
@@ -717,14 +718,36 @@ static void pilot_sdl_ui_callback(SDL_Event *e) {
 
   switch (e->type) {
   case SDL_EVENT_KEY_DOWN: {
+    if (e->key.key == SDLK_U) {
+      ui_change_url(
+          "https://docs.google.com/presentation/d/"
+          "13orvhP-3prdICEwV7MfzzoCi28UhduqXnGfZe1cZRj4/edit?usp=sharing");
+    }
+
+    if (e->key.key == SDLK_G) {
+      ui_change_url("file:///" WEBSITE_SOURCE_DIR "index.html");
+
+      iom_resize_target(g_gl_target, g_cfg.gl_bounds);
+      ren_set_viewport(g_cfg.gl_bounds);
+    }
+
+    if (e->key.key == SDLK_R) {
+      iom_resize_target(g_gl_target, g_cfg.ui_bounds);
+      ren_set_viewport(g_cfg.ui_bounds);
+    }
+
+    if (e->key.key == SDLK_M) {
+      pilot_move_objects();
+    }
+
     char16_t ch = pilot_sdl_key_to_c16(e->key.key, SDL_GetModState());
-    ui_send_mouse_keydown(ch);
+    ui_send_keydown(ch);
     break;
   }
   case SDL_EVENT_KEY_UP: {
 
     char16_t ch = pilot_sdl_key_to_c16(e->key.key, SDL_GetModState());
-    ui_send_mouse_keyup(ch);
+    ui_send_keyup(ch);
     break;
   }
 
@@ -916,7 +939,7 @@ void pilot_set_msg_calls() {
 
 void pilot_ui_texture_clbk(u8 *bitmap, s32 isSubImage, struct rect_T rect) {
   if (!g_cfg.cef_texture && !isSubImage) {
-    s32 id = ren_create_texture(NULL, bitmap, rect.w, rect.h, 4, BGRA);
+    s32 id = ren_create_texture("ui-texture", bitmap, rect.w, rect.h, 4, BGRA);
     if (id <= 0) {
       ERROR("cef texture create failed");
       return;
@@ -929,67 +952,216 @@ void pilot_ui_texture_clbk(u8 *bitmap, s32 isSubImage, struct rect_T rect) {
   if (!isSubImage) {
     ren_update_ui_background(rect, bitmap);
   } else {
-    if (g_cfg.cef_texture)
-      ren_update_ui_background_sub(rect, bitmap);
+    ren_ui_popup_paint(bitmap, rect);
   }
 }
 
 static void pilot_start_camera();
 
 static void pilot_start_camera() {
-  res_init_camera();
-  ren_set_camera_aspect_ratio_wh(800, 600);
+  ren_init_camera();
+  ren_set_camera_aspect_ratio_wh(1920, 1080);
   ren_set_camera_planes(0.1f, 100.0f);
   ren_set_camera_projection(PERSPECTIVE);
-  ren_set_camera_fov(1.3);
-  // ren_translate_camera((vec3){0.0f, 0.0f, -10.0f});
+  ren_set_camera_fov(0.24497866312 * 2);
+  ren_translate_camera((vec3){0.0f, 2.5f, 10.0f});
+
+  ren_camera_orbit_r(4.5);
   ren_camera_mode(CAMERA_ORBIT);
-  ren_camera_orbit_o((vec3){0.0, 0.0, 0.0});
-  ren_camera_orbit_r(6.0);
-  ren_camera_orbit((vec3){-0.6, 1.0, 0.0});
+  // ren_camera_orbit_o((vec3){0.0, 0.0, 0.0});
+  // ren_camera_orbit((vec3){-0.6, 1.0, 0.0});
 }
+
+static struct scene {
+  s32 o_cube;
+  s32 o_cube_2;
+  s32 o_cube_3;
+} scene;
 
 void pilot_init_scene() {
 
   pilot_start_camera();
 
-  s32 texture_id =
+  // texture
+  s32 t_marakutiki =
       pilot_create_texture("gat joel", TEXTURES_SOURCE_DIR "gato-joel.png");
 
-  s32 p_id = ren_create_program_from_files(
-      "default", SHADERS_SOURCE_DIR "vertex_texture.glsl",
+  // entities
+  s32 e_cube = ren_create_entity("cube-1");
+  s32 e_cube_2 = ren_create_entity("cube-2");
+  s32 e_cube_3 = ren_create_entity("cube-3");
+
+  s32 e_floor = ren_create_entity("floor");
+  s32 e_ui_plane = ren_create_entity("ui-plane");
+  s32 e_frustum = ren_create_entity("camera-frustum");
+
+  // programs
+
+  s32 p_light = ren_create_program_from_files(
+      "Color Program", SHADERS_SOURCE_DIR "vertex.glsl",
+      SHADERS_SOURCE_DIR "fragment.glsl");
+  s32 p_texture = ren_create_program_from_files(
+      "Texture Program", SHADERS_SOURCE_DIR "vertex_texture.glsl",
       SHADERS_SOURCE_DIR "fragment_texture.glsl");
-
-  s32 e1 = ren_create_entity("cube-1");
-  s32 cube = ren_primitive_create_cube("cube");
-  s32 m_id = ren_create_material("default-mat");
-  ren_material_set_program(m_id, p_id);
-  ren_material_set_texture(m_id, texture_id);
-
-  ren_entity_add_component(e1, COMPONENT_MATERIAL, m_id);
-  ren_entity_add_component(e1, COMPONENT_OBJECT, cube);
-
+  s32 p_wireframe = ren_create_program_from_files_with_geometry(
+      "wireframe", SHADERS_SOURCE_DIR "vertex_line.glsl",
+      SHADERS_SOURCE_DIR "geometry_wireframe.glsl",
+      SHADERS_SOURCE_DIR "fragment_line.glsl");
+  s32 p_frustum = ren_create_program_from_files_with_geometry(
+      "frustum-lines", SHADERS_SOURCE_DIR "vertex_line.glsl",
+      SHADERS_SOURCE_DIR "geometry_line.glsl",
+      SHADERS_SOURCE_DIR "fragment_line.glsl");
   s32 p_grid = ren_create_program_from_files(
       "grid", SHADERS_SOURCE_DIR "vertex_grid.glsl",
       SHADERS_SOURCE_DIR "fragment_grid.glsl");
+
+  // objects
+  s32 o_cube = ren_primitive_create_cube("cube");
+  s32 o_cube_2 = ren_primitive_create_cube("cube-2");
+  s32 o_cube_3 = ren_primitive_create_cube("cube-3");
+  s32 o_floor = ren_primitive_create_plane("floor");
+  s32 o_ui_plane = ren_primitive_create_plane("ui-plane");
+  s32 o_frustum =
+      ren_primitive_create_frustum("camera-frustum", 1.0f, 13.0f, main_camera.fov);
+
+  scene.o_cube = o_cube;
+  scene.o_cube_2 = o_cube_2;
+  scene.o_cube_3 = o_cube_3;
+
+  // materials
+  s32 m_light = ren_create_material("default");
+  s32 m_texture = ren_create_material("texture");
+  s32 m_wireframe = ren_create_material("wireframe-mat");
   s32 m_grid = ren_create_material("grid-mat");
+  s32 m_ui_plane = ren_create_material("ui-plane");
+  s32 m_frustum = ren_create_material("camera-frustum-mat");
+
+  // s32 p2_id = ren_create_program_from_files(
+  //     "ui_texture_3d", SHADERS_SOURCE_DIR "vertex_texture.glsl",
+  //    SHADERS_SOURCE_DIR "fragment_texture.glsl");
+
+  ren_material_set_program(m_light, p_light);
+  ren_entity_add_component(e_cube, COMPONENT_MATERIAL, m_light);
+  ren_entity_add_component(e_cube, COMPONENT_OBJECT, o_cube);
+
+  ren_material_set_texture(m_texture, t_marakutiki);
+  ren_material_set_program(m_texture, p_texture);
+  ren_entity_add_component(e_cube_2, COMPONENT_MATERIAL, m_texture);
+  ren_entity_add_component(e_cube_2, COMPONENT_OBJECT, o_cube_2);
+
+  ren_material_set_program(m_wireframe, p_wireframe);
+  vec3 wire_color = {0.0f, 1.0f, 1.0f};
+  ren_material_set_color(m_wireframe, wire_color);
+  ren_material_set_line_width(m_wireframe, 2.0f);
+
+  ren_entity_add_component(e_cube_3, COMPONENT_MATERIAL, m_wireframe);
+  ren_entity_add_component(e_cube_3, COMPONENT_OBJECT, o_cube_3);
+
   ren_material_set_program(m_grid, p_grid);
   vec3 grid_line = {1.0f, 1.0f, 1.0f};
   ren_bind_program(programs[p_grid].id);
   ren_program_set_vec3(programs[p_grid].id, "u_line", grid_line);
   ren_program_set_f32(programs[p_grid].id, "u_cell", 0.5f);
-  ren_program_set_f32(programs[p_grid].id, "u_density", 0.20f);
+  ren_program_set_f32(programs[p_grid].id, "u_density", 0.115f);
   ren_program_set_f32(programs[p_grid].id, "u_major_every", 8.0f);
   ren_program_set_f32(programs[p_grid].id, "u_major_width", 1.0f);
   ren_bind_program(0);
   ren_material_set_transparent(m_grid, 1);
 
-  s32 e_floor = ren_create_entity("floor");
-  s32 floor = ren_primitive_create_plane("floor");
-  objects[floor].scale[0] = 50.0f;
-  objects[floor].scale[2] = 50.0f;
+  objects[o_floor].scale[0] = 50.0f;
+  objects[o_floor].scale[2] = 50.0f;
   ren_entity_add_component(e_floor, COMPONENT_MATERIAL, m_grid);
-  ren_entity_add_component(e_floor, COMPONENT_OBJECT, floor);
+  ren_entity_add_component(e_floor, COMPONENT_OBJECT, o_floor);
+
+  ren_material_set_texture(m_ui_plane, 2);
+  ren_material_set_program(m_ui_plane, p_texture);
+  ren_entity_add_component(e_ui_plane, COMPONENT_OBJECT, o_ui_plane);
+  ren_entity_add_component(e_ui_plane, COMPONENT_MATERIAL, m_ui_plane);
+
+  ren_material_set_program(m_frustum, p_frustum);
+  vec3 frustum_color = {1.0f, 1.0f, 1.0f};
+  ren_material_set_color(m_frustum, frustum_color);
+  ren_material_set_line_width(m_frustum, 1.5f);
+  ren_material_set_transparent(m_frustum, 1);
+  ren_entity_add_component(e_frustum, COMPONENT_MATERIAL, m_frustum);
+  ren_entity_add_component(e_frustum, COMPONENT_OBJECT, o_frustum);
+
+  // scene positions
+  objects[o_ui_plane].scale[0] = 17.777777f / 2.0f;
+  objects[o_ui_plane].scale[2] = 10.0f / 2.0f;
+
+  objects[o_ui_plane].position[1] = 2.5f;
+
+  objects[o_ui_plane].rotation[0] = 3.141519f / 2.0f;
+
+  objects[o_cube].position[0] = 0.7f;
+  objects[o_cube].position[1] = 102.5f;
+  objects[o_cube].position[2] = 7.0f;
+
+  objects[o_cube].scale[0] = 0.40f;
+  objects[o_cube].scale[1] = 0.40f;
+  objects[o_cube].scale[2] = 0.40f;
+
+  objects[o_cube].rotation[0] = 0.191986f;
+  objects[o_cube].rotation[1] = 0.401426f;
+  objects[o_cube].rotation[2] = 0.0323599f;
+
+  objects[o_cube_2].position[0] = 0.0f;
+  objects[o_cube_2].position[1] = 102.5f;
+  objects[o_cube_2].position[2] = 9.63f;
+
+  objects[o_cube_2].scale[0] = 0.05f;
+  objects[o_cube_2].scale[1] = 0.05f;
+  objects[o_cube_2].scale[2] = 0.05f;
+
+  objects[o_cube_2].rotation[0] = 0.244346f;
+  objects[o_cube_2].rotation[1] = 0.698132f;
+  objects[o_cube_2].rotation[2] = 0.0;
+
+  objects[o_cube_3].position[0] = -2.2f;
+  objects[o_cube_3].position[1] = 102.5f;
+  objects[o_cube_3].position[2] = 0.8f;
+
+  objects[o_cube_3].scale[0] = 0.80f;
+  objects[o_cube_3].scale[1] = 0.80f;
+  objects[o_cube_3].scale[2] = 0.80f;
+
+  objects[o_cube_3].rotation[0] = 0.2303835f;
+  objects[o_cube_3].rotation[1] = 0.7993608;
+  objects[o_cube_3].rotation[2] = -0.07;
+
+  vec3 fwd;
+  vec3 eye;
+  vec3 near_center;
+  glm_vec3_copy(main_camera.front, fwd);
+  if (main_camera.mode == CAMERA_ORBIT) {
+    vec3 offset;
+    glm_vec3_scale(fwd, main_camera.orbit_radius, offset);
+    glm_vec3_sub(main_camera.orbit_origin, offset, eye);
+    glm_vec3_copy(main_camera.orbit_angles, objects[o_frustum].rotation);
+  } else {
+    glm_vec3_copy(main_camera.position, eye);
+    glm_vec3_copy(main_camera.euler_angles, objects[o_frustum].rotation);
+  }
+  glm_vec3_scale(fwd, 1.0f, near_center);
+  glm_vec3_add(eye, near_center, objects[o_frustum].position);
+  objects[o_frustum].position[2] += 1.0f;
+  objects[o_frustum].scale[0] = main_camera.aspect_ratio;
+};
+
+void pilot_move_objects() {
+
+  objects[scene.o_cube_2].position[0] = 0.0f;
+  objects[scene.o_cube_2].position[1] = 2.5f;
+  objects[scene.o_cube_2].position[2] = 9.63f;
+
+  objects[scene.o_cube_3].position[0] = -2.2f;
+  objects[scene.o_cube_3].position[1] = 2.5f;
+  objects[scene.o_cube_3].position[2] = 0.8f;
+
+  objects[scene.o_cube].position[0] = 0.7f;
+  objects[scene.o_cube].position[1] = 2.5f;
+  objects[scene.o_cube].position[2] = 7.0f;
 };
 
 void pilot_create_targets() {
@@ -1010,8 +1182,12 @@ void pilot_create_targets() {
 }
 
 void pilot_popup_show(s32 show) {
+  if (!show)
+    ren_ui_popup_hide();
+
   if (!g_popup_target)
     return;
+
   if (show) {
     iom_target_z(g_popup_target, 3);
   } else {

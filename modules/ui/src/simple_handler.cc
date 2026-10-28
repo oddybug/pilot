@@ -384,11 +384,26 @@ bool SimpleHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,
 extern "C" void pilot_popup_show(s32 show);
 extern "C" void pilot_popup_size(s32 x, s32 y, s32 w, s32 h);
 
+void SimpleHandler::OnLoadStart(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                TransitionType transition_type) {
+  CEF_REQUIRE_UI_THREAD();
+
+  if (!frame.get() || !frame->IsMain())
+    return;
+
+  popup_show_ = false;
+  popup_rect_ = CefRect();
+  pilot_popup_show(0);
+}
+
 void SimpleHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {
   popup_show_ = show;
+  INFO("popup show: %d", show);
   if (show) {
     pilot_popup_show(1);
   } else {
+    popup_rect_ = CefRect();
     pilot_popup_show(0);
   }
 }
@@ -396,7 +411,8 @@ void SimpleHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {
 void SimpleHandler::OnPopupSize(CefRefPtr<CefBrowser> browser,
                                 const CefRect &rect) {
   popup_rect_ = rect;
-  if (popup_show_) {
+  INFO("popup size: %d,%d %d x %d", rect.x, rect.y, rect.width, rect.height);
+  if (rect.width > 0 && rect.height > 0) {
     pilot_popup_size(rect.x, rect.y, rect.width, rect.height);
   }
 }
@@ -432,13 +448,17 @@ void SimpleHandler::SendPushMsg(list_T list, msg_T msg) {
     return;
 
   while (n) {
-    c8 name[strlen((c8 *)n->value) + 1];
+    struct node *next = n->next;
     std::string id = (c8 *)n->value;
     auto it = frames.find(id);
 
-    if (it == frames.end()) {
-      ERROR("Frame not found %s", name);
-      break;
+    if (it == frames.end() || !it->second.get() || !it->second->IsValid()) {
+      if (it != frames.end())
+        frames.erase(it);
+      free(n->value);
+      gen_list_remove(list, n);
+      n = next;
+      continue;
     }
 
     CefRefPtr<CefFrame> frame = it->second;
@@ -452,7 +472,7 @@ void SimpleHandler::SendPushMsg(list_T list, msg_T msg) {
     frame->SendProcessMessage(PID_RENDERER, cef_msg);
     frames[id];
 
-    n = n->next;
+    n = next;
   }
 };
 
@@ -472,9 +492,9 @@ void SimpleHandler::OnPaint(CefRefPtr<CefBrowser> browser,
     text_callback_((u8 *)buffer, 0, r);
     return;
   }
-  if (type == PET_POPUP && popup_show_) {
-    struct rect_T r = {popup_rect_.x, popup_rect_.y, (s32)popup_rect_.width,
-                       (s32)popup_rect_.height};
+  if (type == PET_POPUP && popup_show_ && width > 0 && height > 0) {
+    struct rect_T r = {popup_rect_.x, popup_rect_.y, (s32)width, (s32)height};
+    INFO("popup paint: %d,%d %d x %d", r.x, r.y, r.w, r.h);
     text_callback_((u8 *)buffer, 1, r);
   }
 }

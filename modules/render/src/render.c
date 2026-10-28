@@ -29,6 +29,11 @@ static s32 ui_program_;
 static s32 ui_texture_;
 static s32 gl_enabled_ = 1;
 
+static struct rect_T ui_popup_rect_;
+static s32 ui_popup_object_;
+static s32 ui_popup_texture_;
+static s32 ui_popup_visible_;
+
 static s32 sky_object_ = 0;
 static s32 sky_program_ = 0;
 static f32 sky_top_[3] = {0.16f, 0.24f, 0.38f};
@@ -132,17 +137,44 @@ static void ren_draw_ui_frame_() {
   glDrawArrays(GL_TRIANGLES, 0, ui_o.n_triangles * 3);
 
   if (gl_enabled_) {
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
-              ren_viewport_.h);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_SCISSOR_TEST);
+    // glEnable(GL_SCISSOR_TEST);
+    // glScissor(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
+    //           ren_viewport_.h);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    // glDisable(GL_SCISSOR_TEST);
     glViewport(ren_viewport_.x, ren_viewport_.y, ren_viewport_.w,
                ren_viewport_.h);
 
     if (active_buffers.depth) {
       glEnable(GL_DEPTH_TEST);
     }
+  }
+};
+
+static void ren_draw_ui_popup_frame_() {
+  if (!ui_popup_visible_ || ui_popup_texture_ <= 0 || ui_program_ == 0 ||
+      ui_popup_rect_.w <= 0 || ui_popup_rect_.h <= 0)
+    return;
+
+  if (ui_popup_object_ == 0)
+    ui_popup_object_ = ren_primitive_create_hud_plane(NULL);
+  if (ui_popup_object_ == 0)
+    return;
+
+  s32 y = ui_viewport_.h - (ui_popup_rect_.y + ui_popup_rect_.h);
+
+  glViewport(ui_popup_rect_.x, y, ui_popup_rect_.w, ui_popup_rect_.h);
+  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glUseProgram(programs[ui_program_].id);
+  glBindTexture(GL_TEXTURE_2D, textures[ui_popup_texture_].gl_id);
+  glBindVertexArray(objects[ui_popup_object_].VAO);
+  glDrawArrays(GL_TRIANGLES, 0, objects[ui_popup_object_].n_triangles * 3);
+  glDisable(GL_BLEND);
+
+  if (active_buffers.depth) {
+    glEnable(GL_DEPTH_TEST);
   }
 };
 
@@ -160,6 +192,7 @@ s8 ren_draw_frame() {
   ren_draw_ui_frame_();
 
   if (!gl_enabled_) {
+    ren_draw_ui_popup_frame_();
     return 0;
   }
 
@@ -174,6 +207,7 @@ s8 ren_draw_frame() {
     }
 
     s32 m_id = e.components[COMPONENT_MATERIAL];
+    // HOLY STATMENT OF LIES IM CRYING
     if (materials[m_id].texture == 0 && materials[m_id].program == 0) {
       INFO("Material has not been set for entity %d", e.id);
       continue;
@@ -214,7 +248,7 @@ s8 ren_draw_frame() {
     }
     ren_program_set_f32(p_gl_id, "u_alpha",
                         materials[m_id].transparent ? 0.6f : 1.0f);
-    if (t_id > 0 && t_id < MAX_TEXTURES && textures[t_id].gl_id)
+    if (t_id < MAX_TEXTURES && textures[t_id].gl_id)
       glBindTexture(GL_TEXTURE_2D, textures[t_id].gl_id);
     if (materials[m_id].transparent) {
       glEnable(GL_BLEND);
@@ -234,6 +268,8 @@ s8 ren_draw_frame() {
     }
   }
 
+  ren_draw_ui_popup_frame_();
+
   return 0;
 }
 
@@ -249,9 +285,9 @@ void ren_set_ui_background(s32 texture_id, struct rect_T bound) {
   }
 
   if (ui_program_ == 0) {
-    ui_program_ =
-        ren_create_program_from_files("cef", SHADERS_SOURCE_DIR "cef_v.glsl",
-                                      SHADERS_SOURCE_DIR "cef_f.glsl");
+    ui_program_ = ren_create_program_from_files(
+        "User Interface Program", SHADERS_SOURCE_DIR "cef_v.glsl",
+        SHADERS_SOURCE_DIR "cef_f.glsl");
   }
 };
 
@@ -286,3 +322,30 @@ void ren_update_ui_background_sub(struct rect_T dst, u8 *bitmap) {
   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
 };
+
+void ren_ui_popup_paint(u8 *bitmap, struct rect_T dst) {
+  if (!bitmap || dst.w <= 0 || dst.h <= 0) {
+    ren_ui_popup_hide();
+    return;
+  }
+
+  if (ui_popup_texture_ == 0) {
+    ui_popup_texture_ =
+        ren_create_texture("ui-popup", bitmap, dst.w, dst.h, 4, BGRA);
+    if (ui_popup_texture_ <= 0) {
+      ERROR("cef popup texture create failed");
+      ui_popup_texture_ = 0;
+      return;
+    }
+  } else if (textures[ui_popup_texture_].width != dst.w ||
+             textures[ui_popup_texture_].height != dst.h) {
+    ren_update_texture(ui_popup_texture_, bitmap, dst.w, dst.h);
+  } else {
+    ren_update_texture_bitmap(ui_popup_texture_, bitmap);
+  }
+
+  ui_popup_rect_ = dst;
+  ui_popup_visible_ = 1;
+};
+
+void ren_ui_popup_hide(void) { ui_popup_visible_ = 0; };

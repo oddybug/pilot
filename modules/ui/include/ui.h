@@ -30,6 +30,8 @@ void ui_set_ui_texture_callback(void (*clbk)(u8 *buffer, s32 isSubImage,
 extern "C" {
 #endif
 
+s32 ui_change_url(c8 *url);
+
 enum UI_CURSOR {
   UI_CURSOR_POINTER = 0,
   UI_CURSOR_CROSS,
@@ -84,9 +86,9 @@ enum UI_CURSOR {
   UI_CURSOR_NUM_VALUES,
 };
 
-void ui_send_mouse_keydown(c16 key);
+void ui_send_keydown(c16 key);
 
-void ui_send_mouse_keyup(c16 key);
+void ui_send_keyup(c16 key);
 
 void ui_send_mouse_event_click(enum MOUSE_BTN mb, struct point_T m_p);
 

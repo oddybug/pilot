@@ -327,7 +327,7 @@ void iom_poll_events() {
     }
       [[fallthrough]];
     case SDL_EVENT_KEY_DOWN:
-      if (event.key.key == SDLK_ESCAPE) {
+      if (event.key.key == SDLK_Q) {
         g_running = 0;
       }
       [[fallthrough]];

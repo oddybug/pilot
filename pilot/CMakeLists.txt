@@ -27,7 +27,7 @@ target_include_directories(pilot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
                                          "${THIRD_PARTY_DIR}/stb"
                                          "${THIRD_PARTY_DIR}/tomlc/src")
 
-target_link_libraries(pilot PRIVATE ui iom render generic cglm SDL3::SDL3 tomlc17)
+target_link_libraries(pilot PRIVATE ui iom render generic cglm SDL3::SDL3)
 
 # CEF
 

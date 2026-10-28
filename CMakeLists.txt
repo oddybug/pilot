@@ -11,6 +11,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
+option(PILOT_USE_INSTALL_PATHS "Bake installed FHS paths into the binaries for packaging" OFF)
+
 #string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type_lower)
 #
 #if(build_type_lower STREQUAL "debug")
@@ -139,3 +141,5 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/modules/ui")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
 
 include(cmake/directories.cmake)
+include(cmake/install.cmake)
+include(cmake/packaging.cmake)

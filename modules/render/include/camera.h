@@ -33,7 +33,7 @@ extern struct camera_T main_camera;
 /**
  * @brief initializes camera values to 0
  */
-void res_init_camera();
+void ren_init_camera();
 
 /**
  * @brief rotate the looking direction of camera. Pivot point is relative to

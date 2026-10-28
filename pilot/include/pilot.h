@@ -30,6 +30,8 @@ void pilot_ui_texture_clbk(u8 *bitmap, s32 isSubImage, struct rect_T rect);
 
 void pilot_init_scene();
 
+void pilot_move_objects();
+
 void pilot_create_targets();
 
 void pilot_popup_show(s32 show);
